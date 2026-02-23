@@ -1,4 +1,5 @@
 ⚡ Sistema de Gestión de Redes Inteligentes (Smart Grid)
+
 📌 Descripción del Proyecto
     El Sistema de Gestión de Redes Inteligentes (Smart Grid) es una solución tecnológica diseñada para optimizar la administración del consumo energético mediante el monitoreo en tiempo      real, el balanceo inteligente de carga, la integración de energías renovables y la implementación de un sistema de facturación dinámica.
     Este proyecto busca modernizar la gestión de redes eléctricas tradicionales, permitiendo una distribución más eficiente, sostenible y automatizada de la energía.
