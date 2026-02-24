@@ -1,3 +1,9 @@
+Patrones de Software
+
+Integrantes:
+- María Camila Pinzón Correa
+- Jose Daniel Ortiz Rico
+
 ⚡ Sistema de Gestión de Redes Inteligentes (Smart Grid)
 
 📌 Descripción del Proyecto
