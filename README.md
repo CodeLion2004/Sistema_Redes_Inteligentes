@@ -17,36 +17,58 @@ Integrantes:
     Implementar un sistema de facturación dinámica basado en el consumo.
 
 🚀 Funcionalidades Principales
+
     1. Monitoreo en Tiempo Real
+    
     2. Balanceo de Carga
+    
     3. Integración con Energías Renovables
+    
     4. Facturación Dinámica
+    
 
 🏗️ Arquitectura del Sistema
     El sistema puede estar basado en una arquitectura distribuida compuesta por:
+    
     Dispositivos IoT (medidores inteligentes)
+    
     Servidor backend (API REST)
+    
     Base de datos
+    
     Dashboard web para monitoreo
+    
     Módulo de análisis de datos
 
 🛠️ Tecnologías Sugeridas
+    
     Backend: Java
+    
     Frontend: React
+    
     Base de datos: MongoDB
 
 📊 Beneficios del Proyecto
+    
     Mayor eficiencia energética.
+    
     Reducción de pérdidas en la red eléctrica.
+    
     Integración sostenible con energías renovables.
+    
     Transparencia en el consumo y facturación.
+    
     Automatización en la gestión de demanda.
 
 👥 Roles del Sistema
+    
     Administrador: Gestiona usuarios y tarifas
+    
     Operador: Supervisa el balanceo de carga y alertas.
+    
     Usuario final: Consulta su consumo y facturación.
 
 🔒 Seguridad  
+    
     Autenticación de usuarios.
     Protección de datos de consumo.
