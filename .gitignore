@@ -1,0 +1,27 @@
+# Compiled output
+target/
+build/
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+
+# IDE - IntelliJ
+.idea/
+*.iml
+
+# IDE - VS Code
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Application properties (si tienes archivos locales)
+application-local.properties
+application-local.yml
