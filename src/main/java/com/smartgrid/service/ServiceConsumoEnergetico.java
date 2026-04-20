@@ -22,5 +22,9 @@ public class ServiceConsumoEnergetico {
 	  public List<ConsumoEnergetico> findAll() {
 	        return repository.findAll();
 	    }
+	  
+	  public long contarConsumos() {
+		    return repository.count();
+		}  
 	
 }

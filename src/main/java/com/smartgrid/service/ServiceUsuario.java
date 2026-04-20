@@ -30,5 +30,9 @@ public class ServiceUsuario {
 	public Optional<Usuario> buscarPorCorreo(String correo) {
         return usuarioRepository.findByCorreo(correo);
     }
+	
+	public long contarUsuarios() {
+	    return usuarioRepository.count();
+	}
 }
 

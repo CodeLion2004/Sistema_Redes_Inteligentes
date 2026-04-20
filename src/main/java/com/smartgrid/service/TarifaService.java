@@ -18,5 +18,5 @@ public class TarifaService {
     public void actualizarTarifa(String tipoUsuario, double nuevaTarifa) {
         ConfiguracionTarifas.INSTANCIA.actualizarTarifa(tipoUsuario, nuevaTarifa);
     }
-
+    
 }

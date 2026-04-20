@@ -69,4 +69,10 @@ public class ServiceFacturaEnergetica {
     public List<FacturaEnergetica> listarFacturas() {
         return facturaEnergeticaRepository.findAll();
     }
+    
+    public long contarFacturas() {
+        return facturaEnergeticaRepository.count();
+    }
 }
+
+
