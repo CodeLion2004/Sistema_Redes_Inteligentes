@@ -37,5 +37,16 @@ public class ControllerUser {
 		return serviceUsuario.buscarPorCorreo(correo);
 	}
 	
+	@PutMapping("/{id}")
+	public Usuario actualizarUsuario(@PathVariable String id, @RequestBody Usuario usuario) {
+	    usuario.setId(id);  // Asegura que el ID sea el de la ruta
+	    return serviceUsuario.actualizarUsuario(usuario);
+	}
+
+	@DeleteMapping("/{id}")
+	public void eliminarUsuario(@PathVariable String id) {
+	    serviceUsuario.eliminarUsuario(id);
+	}
+	
 	
 }

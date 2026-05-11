@@ -73,6 +73,14 @@ public class ServiceFacturaEnergetica {
     public long contarFacturas() {
         return facturaEnergeticaRepository.count();
     }
+    
+    public List<FacturaEnergetica> listarFacturasPorUsuario(String usuarioId) {
+        return facturaEnergeticaRepository.findByIdUsuario(usuarioId);
+    }
+
+    public void eliminarFactura(String id) {
+        facturaEnergeticaRepository.deleteById(id);
+    }
 }
 
 

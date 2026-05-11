@@ -34,5 +34,14 @@ public class ServiceUsuario {
 	public long contarUsuarios() {
 	    return usuarioRepository.count();
 	}
+	
+	public Usuario actualizarUsuario(Usuario usuario) {
+	    // Verifica que el usuario exista
+	    return usuarioRepository.save(usuario);
+	}
+
+	public void eliminarUsuario(String id) {
+	    usuarioRepository.deleteById(id);
+	}
 }
 

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartGrid - Iniciar Sesión</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f1a24 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            width: 350px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .login-card h2 {
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        button {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 0.7rem;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        button:hover { background: #1a252f; }
+        .error { color: #e74c3c; margin-top: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>🔐 Acceso al sistema</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Usuario</label>
+                <input type="text" id="username" required autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Ingresar</button>
+            <div id="errorMsg" class="error"></div>
+        </form>
+    </div>
+
+    <script>
+        const rol = sessionStorage.getItem('rolSeleccionado');
+        if (!rol) {
+            // Si alguien entra directamente a login sin elegir rol, redirigir al index
+            window.location.href = 'index.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, rol })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    // Guardar token y rol en localStorage
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('userRol', rol);
+                    // Redirigir según el rol
+                    if (rol === 'admin') window.location.href = 'admin.html';
+                    else window.location.href = 'usuario.html';
+                } else {
+                    document.getElementById('errorMsg').innerText = data.error || 'Credenciales inválidas';
+                }
+            } catch (err) {
+                document.getElementById('errorMsg').innerText = 'Error de conexión con el servidor';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,10 +2,13 @@ package com.smartgrid.controller;
 
 import java.util.List;
 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.smartgrid.dto.FacturaRequest;
@@ -23,14 +26,22 @@ public class ControllerFacturaEnergetica {
 	}
 	
 	
-	 @PostMapping
+	 	@PostMapping
 	    public FacturaEnergetica generarFactura(@RequestBody FacturaRequest request) {
 	        return facturaEnergeticaService.generarFactura(request);
 	    }
 
-	    @GetMapping
-	    public List<FacturaEnergetica> listarFacturas() {
-	        return facturaEnergeticaService.listarFacturas();
+		 @GetMapping
+		 public List<FacturaEnergetica> listarFacturas(@RequestParam(required = false) String usuarioId) {
+		     if (usuarioId != null && !usuarioId.isEmpty()) {
+		         return facturaEnergeticaService.listarFacturasPorUsuario(usuarioId);
+		     }
+		     return facturaEnergeticaService.listarFacturas();
+		 }
+	    
+	    @DeleteMapping("/{id}")
+	    public void eliminarFactura(@PathVariable String id) {
+	        facturaEnergeticaService.eliminarFactura(id);
 	    }
 	
 
