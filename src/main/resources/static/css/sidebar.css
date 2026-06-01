@@ -1,0 +1,239 @@
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    color: #e2e8f0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 8px 0 20px rgba(0,0,0,0.08);
+    overflow-y: auto;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.sidebar-header {
+    padding: 28px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 24px;
+}
+
+.sidebar-header h2 {
+    font-size: 1.7rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #38bdf8, #818cf8);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-header h2 i {
+    color: #38bdf8;
+}
+
+/* =========================
+   NAVIGATION
+========================= */
+
+.nav-links {
+    flex: 1;
+    padding: 0 16px;
+}
+
+.nav-links a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    margin: 6px 0;
+    border-radius: 16px;
+    font-weight: 500;
+    color: #cbd5e6;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.nav-links a i {
+    width: 24px;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.nav-links a:hover {
+    background: rgba(56, 189, 248, 0.15);
+    color: white;
+    transform: translateX(4px);
+}
+
+.nav-links a.active {
+    background: linear-gradient(95deg, #1e2a4a, #0f172a);
+    color: #38bdf8;
+    border-left: 3px solid #38bdf8;
+}
+
+/* =========================
+   DROPDOWN REPORTES
+========================= */
+
+.menu-dropdown {
+    margin: 6px 0;
+}
+
+.dropdown-toggle {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #cbd5e6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.dropdown-toggle span {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dropdown-toggle span i {
+    width: 24px;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.dropdown-toggle:hover {
+    background: rgba(56, 189, 248, 0.15);
+    color: white;
+    transform: translateX(4px);
+}
+
+.dropdown-content {
+    display: none;
+    margin-left: 22px;
+    margin-top: 4px;
+    border-left: 1px solid rgba(255,255,255,0.12);
+    padding-left: 8px;
+}
+
+.menu-dropdown.open .dropdown-content {
+    display: block;
+}
+
+.dropdown-content a {
+    font-size: 0.88rem;
+    padding: 10px 14px;
+    margin: 4px 0;
+}
+
+.dropdown-content a i {
+    width: 20px;
+    font-size: 1rem;
+}
+
+.dropdown-icon {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.menu-dropdown.open .dropdown-icon {
+    transform: rotate(180deg);
+}
+
+.menu-dropdown.open .dropdown-toggle {
+    background: rgba(56, 189, 248, 0.10);
+    color: white;
+}
+
+.menu-dropdown:has(.dropdown-content a.active) .dropdown-toggle {
+    background: linear-gradient(95deg, #1e2a4a, #0f172a);
+    color: #38bdf8;
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.sidebar-footer {
+    padding: 20px 24px 30px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.75rem;
+    color: #7c8ba0;
+}
+
+.logout-sidebar-btn {
+    background: transparent;
+    border: 1px solid #6ee7b7;
+    color: white;
+    width: 100%;
+    padding: 8px;
+    border-radius: 40px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.logout-sidebar-btn:hover {
+    background: rgba(110, 231, 183, 0.2);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+
+    .sidebar {
+        width: 100%;
+        position: relative;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .sidebar-header,
+    .sidebar-footer {
+        display: none;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .dropdown-content {
+        margin-left: 0;
+        border-left: none;
+        padding-left: 0;
+        width: 100%;
+    }
+
+    .menu-dropdown {
+        width: 100%;
+    }
+}

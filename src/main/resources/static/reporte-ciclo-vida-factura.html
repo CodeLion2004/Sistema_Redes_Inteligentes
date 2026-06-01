@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Ciclo de Vida de Facturas</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportes.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+    <link rel="stylesheet" href="/css/tables.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Ciclo de Vida de Facturas Energéticas</h1>
+                <p>
+                    <i class="fas fa-arrows-spin"></i>
+                    Transiciones de estado usando el patrón State · Simulador de acciones en tiempo real
+                </p>
+            </div>
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2;color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <section class="kpi-section">
+            <div class="flex-between" style="gap:16px;flex-wrap:wrap;">
+                <div>
+                    <h2><i class="fas fa-file-invoice-dollar"></i> Indicadores del ciclo de vida</h2>
+                    <p id="resumenPeriodo" class="text-muted mt-1">Cargando reporte...</p>
+                </div>
+                <select id="periodoSelector" class="action-btn">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid mt-3">
+                <div class="kpi-card">
+                    <span>Total facturas</span>
+                    <strong id="kpiTotal">0</strong>
+                    <small>En el período</small>
+                </div>
+                <div class="kpi-card">
+                    <span>Monto total</span>
+                    <strong id="kpiMontoTotal">$0</strong>
+                    <small>Valor acumulado</small>
+                </div>
+                <div class="kpi-card">
+                    <span>Estado dominante</span>
+                    <strong id="kpiDominante">—</strong>
+                    <small>Mayor cantidad</small>
+                </div>
+                <div class="kpi-card" style="border-left:4px solid #f59e0b;">
+                    <span>Monto recuperable</span>
+                    <strong id="kpiRecuperable" style="color:#d97706;">$0</strong>
+                    <small>Facturas VENCIDAS</small>
+                </div>
+                <div class="kpi-card" style="border-left:4px solid #ef4444;">
+                    <span>Monto bloqueado</span>
+                    <strong id="kpiBloqueado" style="color:#dc2626;">$0</strong>
+                    <small>Facturas ANULADAS</small>
+                </div>
+            </div>
+        </section>
+
+        <!-- DIAGRAMA DE ESTADOS -->
+        <section class="kpi-section" style="margin-top:24px;">
+            <h3 style="margin-bottom:16px;">
+                <i class="fas fa-diagram-project"></i>
+                Autómata de estados — Patrón State
+            </h3>
+
+            <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;justify-content:center;padding:20px 0;">
+
+                <!-- PENDIENTE -->
+                <div style="text-align:center;">
+                    <div id="nodo-PENDIENTE" style="background:#eff6ff;border:2px solid #3b82f6;border-radius:12px;
+                                padding:14px 20px;min-width:110px;font-weight:600;color:#1d4ed8;font-size:13px;">
+                        <i class="fas fa-clock"></i><br>PENDIENTE
+                    </div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:6px;">3 acciones posibles</div>
+                </div>
+
+                <!-- Flechas desde PENDIENTE -->
+                <div style="display:flex;flex-direction:column;gap:10px;align-self:center;">
+                    <div style="font-size:11px;color:#16a34a;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-arrow-right"></i> PAGAR
+                    </div>
+                    <div style="font-size:11px;color:#d97706;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-arrow-right"></i> VENCER
+                    </div>
+                    <div style="font-size:11px;color:#dc2626;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-arrow-right"></i> ANULAR
+                    </div>
+                </div>
+
+                <!-- VENCIDA -->
+                <div style="text-align:center;">
+                    <div id="nodo-VENCIDA" style="background:#fffbeb;border:2px solid #f59e0b;border-radius:12px;
+                                padding:14px 20px;min-width:110px;font-weight:600;color:#92400e;font-size:13px;">
+                        <i class="fas fa-triangle-exclamation"></i><br>VENCIDA
+                    </div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:6px;">2 acciones posibles</div>
+                </div>
+
+                <!-- Flechas desde VENCIDA -->
+                <div style="display:flex;flex-direction:column;gap:10px;align-self:center;">
+                    <div style="font-size:11px;color:#16a34a;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-arrow-right"></i> PAGAR
+                    </div>
+                    <div style="font-size:11px;color:#dc2626;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-arrow-right"></i> ANULAR
+                    </div>
+                </div>
+
+                <!-- PAGADA -->
+                <div style="text-align:center;">
+                    <div id="nodo-PAGADA" style="background:#f0fdf4;border:2px solid #22c55e;border-radius:12px;
+                                padding:14px 20px;min-width:110px;font-weight:600;color:#166534;font-size:13px;">
+                        <i class="fas fa-circle-check"></i><br>PAGADA
+                    </div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:6px;">Estado terminal ✓</div>
+                </div>
+
+                <!-- separador visual -->
+                <div style="align-self:center;color:#d1d5db;font-size:20px;">|</div>
+
+                <!-- ANULADA -->
+                <div style="text-align:center;">
+                    <div id="nodo-ANULADA" style="background:#fef2f2;border:2px solid #ef4444;border-radius:12px;
+                                padding:14px 20px;min-width:110px;font-weight:600;color:#991b1b;font-size:13px;">
+                        <i class="fas fa-ban"></i><br>ANULADA
+                    </div>
+                    <div style="font-size:11px;color:#6b7280;margin-top:6px;">Estado terminal ✗</div>
+                </div>
+
+            </div>
+
+            <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;
+                        padding:12px 16px;font-size:13px;color:#92400e;margin-top:4px;">
+                <i class="fas fa-info-circle" style="color:#d97706;"></i>
+                <strong>State:</strong> cada estado implementa <code>EstadoFactura</code>.
+                <code>EstadoPagada</code> y <code>EstadoAnulada</code> lanzan
+                <code>IllegalStateException</code> en todos los métodos — son estados terminales.
+                <code>FacturaEstadoContext</code> delega la acción al estado actual sin condicionales.
+            </div>
+        </section>
+
+        <!-- GRÁFICAS -->
+        <section class="kpi-section" style="margin-top:24px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex-wrap:wrap;">
+                <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <h3 style="font-size:14px;color:#374151;margin-bottom:16px;">
+                        <i class="fas fa-chart-pie"></i> Distribución por cantidad de facturas
+                    </h3>
+                    <canvas id="pieEstadosChart" height="220"></canvas>
+                </div>
+                <div style="background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+                    <h3 style="font-size:14px;color:#374151;margin-bottom:16px;">
+                        <i class="fas fa-chart-bar"></i> Monto total por estado ($)
+                    </h3>
+                    <canvas id="barMontoChart" height="220"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- SIMULADOR DE TRANSICIONES -->
+        <section class="kpi-section" style="margin-top:24px;">
+            <h3 style="margin-bottom:16px;">
+                <i class="fas fa-terminal"></i>
+                Simulador de transiciones State
+            </h3>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">
+                Selecciona una factura y ejecuta una acción. El patrón State validará si la transición
+                es permitida desde el estado actual.
+            </p>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+                <div style="flex:2;min-width:200px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                        ID de la factura
+                    </label>
+                    <input id="inputIdFactura" type="text" placeholder="Selecciona desde la tabla..."
+                           style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;
+                                  font-size:13px;font-family:inherit;">
+                </div>
+                <div style="flex:1;min-width:140px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                        Estado actual
+                    </label>
+                    <input id="inputEstadoActual" type="text" readonly placeholder="—"
+                           style="width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:8px;
+                                  font-size:13px;background:#f8fafc;font-family:inherit;">
+                </div>
+                <div style="flex:1;min-width:140px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">
+                        Acción a ejecutar
+                    </label>
+                    <select id="selectAccion"
+                            style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;
+                                   font-size:13px;font-family:inherit;">
+                        <option value="PAGAR">PAGAR</option>
+                        <option value="VENCER">VENCER</option>
+                        <option value="ANULAR">ANULAR</option>
+                    </select>
+                </div>
+                <button id="btnEjecutarTransicion"
+                        style="padding:9px 20px;background:#3b82f6;color:#fff;border:none;border-radius:8px;
+                               font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">
+                    <i class="fas fa-play"></i> Ejecutar
+                </button>
+            </div>
+
+            <!-- Feedback simulador -->
+            <div id="feedbackSimulador" style="display:none;margin-top:14px;padding:12px 16px;
+                     border-radius:8px;border:1px solid;font-size:13px;">
+                <i id="feedbackIcon"></i>
+                <span id="feedbackTexto"></span>
+            </div>
+        </section>
+
+        <!-- TABLA DE FACTURAS -->
+        <section class="kpi-section" style="margin-top:24px;">
+            <h3 style="margin-bottom:16px;">
+                <i class="fas fa-table"></i>
+                Facturas y sus transiciones disponibles
+            </h3>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead style="background:#f1f5f9;">
+                        <tr>
+                            <th style="padding:12px;text-align:left;">ID</th>
+                            <th style="padding:12px;text-align:left;">Usuario</th>
+                            <th style="padding:12px;text-align:left;">Zona</th>
+                            <th style="padding:12px;text-align:right;">Total</th>
+                            <th style="padding:12px;text-align:center;">Estado</th>
+                            <th style="padding:12px;text-align:left;">Fecha emisión</th>
+                            <th style="padding:12px;text-align:left;">Acciones State</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaFacturas">
+                        <tr><td colspan="7" style="padding:16px;color:#64748b;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- RECOMENDACIONES -->
+        <section class="recommendation-section">
+            <h3><i class="fas fa-lightbulb"></i> Recomendaciones del reporte</h3>
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i>
+            Reporte: /api/reportes-avanzados/ciclo-vida-factura &nbsp;|&nbsp;
+            Simulador: PUT /facturas/{id}/estado/{accion}
+        </div>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol   = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let pieChart = null;
+    let barChart = null;
+
+    const COLOR_ESTADO = {
+        PENDIENTE: { bg: 'rgba(59,130,246,0.75)',  border: '#3b82f6', text: '#1d4ed8', light: '#eff6ff' },
+        VENCIDA:   { bg: 'rgba(245,158,11,0.75)',  border: '#f59e0b', text: '#92400e', light: '#fffbeb' },
+        PAGADA:    { bg: 'rgba(34,197,94,0.75)',   border: '#22c55e', text: '#166534', light: '#f0fdf4' },
+        ANULADA:   { bg: 'rgba(239,68,68,0.75)',   border: '#ef4444', text: '#991b1b', light: '#fef2f2' },
+    };
+
+    const ICONO_ESTADO = {
+        PENDIENTE: 'fa-clock',
+        VENCIDA:   'fa-triangle-exclamation',
+        PAGADA:    'fa-circle-check',
+        ANULADA:   'fa-ban',
+    };
+
+    function fmtMoney(v) { return `$${Number(v||0).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2})}`; }
+    function fmtNum(v)   { return Number(v||0).toLocaleString('es-CO'); }
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(r => r.text())
+            .then(html => {
+                document.getElementById('sidebar-container').innerHTML = html;
+                const page = window.location.pathname.split('/').pop().replace('.html','');
+                const link = document.querySelector(`#sidebar-container a[data-page="${page}"]`);
+                if (link) link.classList.add('active');
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(btn => {
+                    btn.addEventListener('click', () => btn.closest('.menu-dropdown').classList.toggle('open'));
+                });
+                const rLink = document.querySelector(`#sidebar-container .dropdown-content a[data-page="${page}"]`);
+                if (rLink) { rLink.classList.add('active'); rLink.closest('.menu-dropdown').classList.add('open'); }
+                const lb = document.getElementById('logoutSidebarBtnGlobal');
+                if (lb) lb.addEventListener('click', cerrarSesion);
+            });
+    }
+
+    function updateDate() {
+        const now = new Date();
+        const f = now.toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${f.charAt(0).toUpperCase()+f.slice(1)}`;
+    }
+
+    /* ── Carga del reporte ── */
+    async function cargarReporte(periodo) {
+        const rolApi = rol === 'admin' ? 'ADMIN' : 'USER';
+        try {
+            const res  = await fetch(`/api/reportes-avanzados/ciclo-vida-factura?periodo=${periodo}&rolUsuario=${rolApi}`);
+            if (!res.ok) throw new Error('Error cargando reporte');
+            const data = await res.json();
+
+            actualizarKPIs(data, periodo);
+            actualizarGraficoPie(data.conteoPorEstado || {});
+            actualizarGraficoBar(data.montoPorEstado  || {});
+            actualizarTabla(data.facturas || []);
+            actualizarRecomendaciones(data.recomendaciones || []);
+            resaltarNodoDominante(data.estadoDominante);
+
+        } catch (e) {
+            console.error(e);
+            document.getElementById('tablaFacturas').innerHTML =
+                `<tr><td colspan="7" style="padding:16px;">
+                    <div class="empty-state">Error al cargar el reporte. Verifica /api/reportes-avanzados/ciclo-vida-factura</div>
+                 </td></tr>`;
+        }
+    }
+
+    function actualizarKPIs(data, periodo) {
+        document.getElementById('kpiTotal').innerText       = fmtNum(data.totalFacturas);
+        document.getElementById('kpiMontoTotal').innerText  = fmtMoney(data.montoTotal);
+        document.getElementById('kpiDominante').innerText   = data.estadoDominante || '—';
+        document.getElementById('kpiRecuperable').innerText = fmtMoney(data.montoRecuperable);
+        document.getElementById('kpiBloqueado').innerText   = fmtMoney(data.montoBloqueado);
+        document.getElementById('resumenPeriodo').innerText =
+            `Período: ${periodo}. Patrón State — cada estado determina sus propias transiciones válidas.`;
+    }
+
+    function resaltarNodoDominante(estado) {
+        ['PENDIENTE','VENCIDA','PAGADA','ANULADA'].forEach(e => {
+            const nodo = document.getElementById(`nodo-${e}`);
+            if (!nodo) return;
+            nodo.style.boxShadow = e === estado ? '0 0 0 3px currentColor' : 'none';
+            nodo.style.transform = e === estado ? 'scale(1.05)' : 'scale(1)';
+        });
+    }
+
+    function actualizarGraficoPie(conteo) {
+        const ctx = document.getElementById('pieEstadosChart').getContext('2d');
+        if (pieChart) pieChart.destroy();
+        const labels = Object.keys(conteo);
+        const values = Object.values(conteo);
+        pieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: labels.map(l => (COLOR_ESTADO[l]||{bg:'#ccc'}).bg),
+                    borderColor:     labels.map(l => (COLOR_ESTADO[l]||{border:'#999'}).border),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position:'bottom', labels:{ font:{ size:12 } } },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtNum(ctx.raw)} facturas` } }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoBar(montos) {
+        const ctx = document.getElementById('barMontoChart').getContext('2d');
+        if (barChart) barChart.destroy();
+        const labels = Object.keys(montos);
+        const values = Object.values(montos);
+        barChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Monto ($)',
+                    data: values,
+                    backgroundColor: labels.map(l => (COLOR_ESTADO[l]||{bg:'#ccc'}).bg),
+                    borderColor:     labels.map(l => (COLOR_ESTADO[l]||{border:'#999'}).border),
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend:{ display:false },
+                    tooltip:{ callbacks:{ label: ctx => ` ${fmtMoney(ctx.raw)}` } }
+                },
+                scales: { y:{ beginAtZero:true, ticks:{ callback: v => `$${v}` } } }
+            }
+        });
+    }
+
+    function actualizarTabla(facturas) {
+        const tbody = document.getElementById('tablaFacturas');
+        if (!facturas.length) {
+            tbody.innerHTML = `<tr><td colspan="7" style="padding:16px;color:#64748b;text-align:center;">
+                Sin facturas para el período seleccionado.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = facturas.map(f => {
+            const c       = COLOR_ESTADO[f.estado] || { light:'#f8fafc', text:'#374151', border:'#e2e8f0' };
+            const icono   = ICONO_ESTADO[f.estado]  || 'fa-question';
+            const idCorto = f.id ? f.id.substring(0, 10) + '…' : '—';
+
+            const btnsPerm = (f.transicionesPermitidas || []).map(a =>
+                `<button onclick="seleccionarFactura('${f.id}','${f.estado}','${a}')"
+                         title="Ejecutar ${a}"
+                         style="padding:3px 8px;font-size:11px;border-radius:4px;cursor:pointer;
+                                border:1px solid #22c55e;background:#f0fdf4;color:#166534;margin-right:4px;">
+                    ${a}
+                 </button>`
+            ).join('');
+
+            const bloquedosHtml = (f.transicionesBloqueadas || []).length > 0
+                ? `<span style="font-size:11px;color:#9ca3af;margin-left:4px;">
+                       bloqueadas: ${f.transicionesBloqueadas.join(', ')}
+                   </span>`
+                : '';
+
+            return `<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;"
+                        onclick="seleccionarFactura('${f.id}','${f.estado}', null)">
+                <td style="padding:10px;font-family:monospace;font-size:12px;color:#6b7280;"
+                    title="${f.id}">${idCorto}</td>
+                <td style="padding:10px;">${f.nombreUsuario}</td>
+                <td style="padding:10px;">${f.zona}</td>
+                <td style="padding:10px;text-align:right;font-weight:600;">${fmtMoney(f.total)}</td>
+                <td style="padding:10px;text-align:center;">
+                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+                                 border-radius:20px;font-size:11px;font-weight:600;
+                                 background:${c.light};color:${c.text};border:1px solid ${c.border};">
+                        <i class="fas ${icono}"></i>${f.estado}
+                    </span>
+                </td>
+                <td style="padding:10px;font-size:12px;color:#6b7280;">${f.fechaEmision}</td>
+                <td style="padding:10px;">${btnsPerm}${bloquedosHtml}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function actualizarRecomendaciones(recs) {
+        const div = document.getElementById('recomendaciones');
+        if (!recs.length) {
+            div.innerHTML = `<div class="empty-state">Sin recomendaciones disponibles.</div>`;
+            return;
+        }
+        div.innerHTML = recs.map(r =>
+            `<div class="recommendation-item">
+                <i class="fas fa-circle-check" style="color:#16a34a;"></i>
+                <span>${r}</span>
+            </div>`
+        ).join('');
+    }
+
+    /* ── Simulador de transiciones ── */
+    function seleccionarFactura(id, estado, accion) {
+        document.getElementById('inputIdFactura').value  = id;
+        document.getElementById('inputEstadoActual').value = estado;
+        if (accion) document.getElementById('selectAccion').value = accion;
+        document.getElementById('inputIdFactura').scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    async function ejecutarTransicion() {
+        const id     = document.getElementById('inputIdFactura').value.trim();
+        const accion = document.getElementById('selectAccion').value;
+
+        if (!id) {
+            mostrarFeedback('Selecciona una factura de la tabla primero.', true);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/facturas/${id}/estado/${accion}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!res.ok) {
+                const err = await res.text();
+                throw new Error(err || 'Transición rechazada por el patrón State');
+            }
+
+            const factura = await res.json();
+            mostrarFeedback(
+                `✓ Transición exitosa. Factura ahora en estado: ${factura.estado}. `
+                + `El patrón State de ${document.getElementById('inputEstadoActual').value} permitió la acción ${accion}.`,
+                false
+            );
+
+            // Recargar para reflejar el nuevo estado
+            await cargarReporte(document.getElementById('periodoSelector').value);
+
+        } catch (e) {
+            mostrarFeedback(
+                `✗ Transición bloqueada por State: "${e.message}". `
+                + `El estado actual no permite la acción ${accion}.`,
+                true
+            );
+        }
+    }
+
+    function mostrarFeedback(msg, esError) {
+        const div  = document.getElementById('feedbackSimulador');
+        const icon = document.getElementById('feedbackIcon');
+        const txt  = document.getElementById('feedbackTexto');
+
+        txt.innerText        = msg;
+        div.style.display    = 'flex';
+        div.style.gap        = '10px';
+        div.style.alignItems = 'center';
+        div.style.background = esError ? '#fee2e2' : '#dcfce7';
+        div.style.borderColor= esError ? '#fca5a5' : '#86efac';
+        div.style.color      = esError ? '#b91c1c' : '#166534';
+        icon.className       = esError ? 'fas fa-circle-xmark' : 'fas fa-check-circle';
+
+        setTimeout(() => { div.style.display = 'none'; }, 7000);
+    }
+
+    /* ── DOMContentLoaded ── */
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+
+        const selector = document.getElementById('periodoSelector');
+        cargarReporte(selector.value);
+
+        selector.addEventListener('change', () => cargarReporte(selector.value));
+        document.getElementById('refreshBtn').addEventListener('click', () => cargarReporte(selector.value));
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+        document.getElementById('btnEjecutarTransicion').addEventListener('click', ejecutarTransicion);
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

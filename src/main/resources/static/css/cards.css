@@ -1,0 +1,46 @@
+/* =========================
+   BASE CARD
+========================= */
+
+.card,
+.stat-card,
+.kpi-card,
+.insight-card,
+.chart-section,
+.kpi-section,
+.recommendation-section,
+.critical-section,
+.umbral-section {
+    background: white;
+    border-radius: 28px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* =========================
+   GENERIC CARD
+========================= */
+
+.card {
+    padding: 1.5rem;
+}
+
+/* =========================
+   RECENT ITEM
+========================= */
+
+.recent-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 14px;
+}
+
+.recent-item strong {
+    color: #0f172a;
+}
+
+.recent-item small {
+    display: block;
+    color: #64748b;
+    margin-top: 4px;
+}

@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Reporte Command</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportes.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Comandos de Red</h1>
+                <p>
+                    <i class="fas fa-terminal"></i>
+                    Historial, ejecución y reversión de comandos usando el patrón Command
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Salir
+                </button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <section class="kpi-section">
+            <div class="flex-between" style="gap:16px; flex-wrap:wrap;">
+                <div>
+                    <h2>
+                        <i class="fas fa-list-check"></i>
+                        Indicadores de comandos ejecutados
+                    </h2>
+                    <p id="resumenEstado" class="text-muted mt-1">
+                        Cargando historial de comandos...
+                    </p>
+                </div>
+
+                <button class="action-btn" id="deshacerBtn" style="background:#fef9c3; color:#854d0e;">
+                    <i class="fas fa-rotate-left"></i>
+                    Deshacer último
+                </button>
+            </div>
+
+            <div class="kpi-grid mt-3">
+                <div class="kpi-card">
+                    <span>Comandos en historial</span>
+                    <strong id="kpiTotalComandos">0</strong>
+                    <small>Pendientes de deshacer</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Límites actualizados</span>
+                    <strong id="kpiLimites">0</strong>
+                    <small>ActualizarLimiteConsumo</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Fuentes cambiadas</span>
+                    <strong id="kpiFuentes">0</strong>
+                    <small>CambiarFuenteEnergia</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Niveles de alerta</span>
+                    <strong id="kpiNiveles">0</strong>
+                    <small>CambiarNivelAlerta</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Último comando</span>
+                    <strong id="kpiUltimo" style="font-size:0.85rem;">—</strong>
+                    <small>Comando más reciente</small>
+                </div>
+            </div>
+        </section>
+
+        <!-- Panel de ejecución de comandos -->
+        <section class="chart-section">
+            <h2 style="margin-bottom:20px;">
+                <i class="fas fa-play-circle"></i>
+                Ejecutar comando sobre la red
+            </h2>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:20px;">
+
+                <!-- Comando 1: Actualizar límite -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:22px; padding:20px;">
+                    <h4 style="margin-bottom:12px; color:#0f172a;">
+                        <i class="fas fa-sliders" style="color:#3b82f6;"></i>
+                        Actualizar límite de consumo
+                    </h4>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Tipo de configuración
+                    </label>
+                    <select id="tipoConfigLimite" style="width:100%; margin:6px 0 12px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1;">
+                        <option value="SOLAR">SOLAR</option>
+                        <option value="EOLICA">EOLICA</option>
+                        <option value="CONVENCIONAL">CONVENCIONAL</option>
+                    </select>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Nuevo límite (kWh)
+                    </label>
+                    <input type="number" id="nuevoLimite" value="5000" step="100"
+                           style="width:100%; margin:6px 0 14px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1; box-sizing:border-box;">
+                    <button class="action-btn" id="btnLimite" style="width:100%; justify-content:center;">
+                        <i class="fas fa-bolt"></i> Ejecutar
+                    </button>
+                </div>
+
+                <!-- Comando 2: Cambiar fuente -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:22px; padding:20px;">
+                    <h4 style="margin-bottom:12px; color:#0f172a;">
+                        <i class="fas fa-solar-panel" style="color:#16a34a;"></i>
+                        Cambiar fuente de energía
+                    </h4>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Tipo de configuración
+                    </label>
+                    <select id="tipoConfigFuente" style="width:100%; margin:6px 0 12px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1;">
+                        <option value="SOLAR">SOLAR</option>
+                        <option value="EOLICA">EOLICA</option>
+                        <option value="CONVENCIONAL">CONVENCIONAL</option>
+                    </select>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Nueva fuente
+                    </label>
+                    <select id="nuevaFuente" style="width:100%; margin:6px 0 14px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1;">
+                        <option value="SOLAR">SOLAR</option>
+                        <option value="EOLICA">EOLICA</option>
+                        <option value="CONVENCIONAL">CONVENCIONAL</option>
+                        <option value="HIDRAULICA">HIDRAULICA</option>
+                    </select>
+                    <button class="action-btn" id="btnFuente" style="width:100%; justify-content:center; background:#dcfce7; color:#166534;">
+                        <i class="fas fa-plug"></i> Ejecutar
+                    </button>
+                </div>
+
+                <!-- Comando 3: Cambiar nivel de alerta -->
+                <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:22px; padding:20px;">
+                    <h4 style="margin-bottom:12px; color:#0f172a;">
+                        <i class="fas fa-bell" style="color:#f59e0b;"></i>
+                        Cambiar nivel de alerta
+                    </h4>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Tipo de configuración
+                    </label>
+                    <select id="tipoConfigAlerta" style="width:100%; margin:6px 0 12px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1;">
+                        <option value="SOLAR">SOLAR</option>
+                        <option value="EOLICA">EOLICA</option>
+                        <option value="CONVENCIONAL">CONVENCIONAL</option>
+                    </select>
+                    <label style="font-size:0.8rem; color:#64748b; font-weight:600; text-transform:uppercase;">
+                        Nuevo nivel
+                    </label>
+                    <select id="nuevoNivel" style="width:100%; margin:6px 0 14px; padding:8px 12px; border-radius:14px; border:1px solid #cbd5e1;">
+                        <option value="BAJO">BAJO</option>
+                        <option value="MEDIO">MEDIO</option>
+                        <option value="ALTO">ALTO</option>
+                        <option value="CRITICO">CRITICO</option>
+                    </select>
+                    <button class="action-btn" id="btnAlerta" style="width:100%; justify-content:center; background:#fef9c3; color:#854d0e;">
+                        <i class="fas fa-triangle-exclamation"></i> Ejecutar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback de ejecución -->
+            <div id="feedbackComando" style="display:none; margin-top:16px; padding:14px 20px; border-radius:18px; background:#dcfce7; border:1px solid #86efac; color:#166534;">
+                <i class="fas fa-check-circle"></i>
+                <span id="feedbackMensaje"></span>
+            </div>
+        </section>
+
+        <!-- Gráficos -->
+        <div class="charts-grid">
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-chart-bar"></i>
+                    Comandos ejecutados por tipo
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="comandosTipoChart" height="130"></canvas>
+                </div>
+            </section>
+
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-chart-pie"></i>
+                    Distribución por tipo
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="distribucionChart" height="130"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <!-- Historial de comandos -->
+        <section class="chart-section">
+            <h2>
+                <i class="fas fa-clock-rotate-left"></i>
+                Historial de comandos del invocador
+            </h2>
+
+            <div class="chart-wrapper" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                    <tr style="text-align:left; border-bottom:2px solid #e2e8f0;">
+                        <th style="padding:12px;">#</th>
+                        <th style="padding:12px;">Nombre del comando</th>
+                        <th style="padding:12px;">Tipo</th>
+                        <th style="padding:12px;">Estado</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tablaHistorial">
+                    <tr>
+                        <td colspan="4" style="padding:16px; color:#64748b;">
+                            Cargando historial...
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Recomendaciones -->
+        <section class="recommendation-section">
+            <h3>
+                <i class="fas fa-lightbulb"></i>
+                Recomendaciones operativas
+            </h3>
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <!-- Relación con patrones -->
+        <section class="recommendation-section">
+            <h3>
+                <i class="fas fa-network-wired"></i>
+                Relación con el patrón Command
+            </h3>
+
+            <div class="recommendation-list">
+                <div class="recommendation-item">
+                    <i class="fas fa-code-branch"></i>
+                    <span>
+                        <strong>Interfaz ComandoRed:</strong> define el contrato con los métodos
+                        <code>ejecutar()</code>, <code>deshacer()</code> y <code>getNombre()</code>,
+                        permitiendo que el invocador trate todos los comandos de forma uniforme.
+                    </span>
+                </div>
+
+                <div class="recommendation-item">
+                    <i class="fas fa-layer-group"></i>
+                    <span>
+                        <strong>Comandos concretos:</strong> <code>ComandoActualizarLimiteConsumo</code>,
+                        <code>ComandoCambiarFuenteEnergia</code> y <code>ComandoCambiarNivelAlerta</code>
+                        encapsulan cada operación junto con el estado previo necesario para deshacerla.
+                    </span>
+                </div>
+
+                <div class="recommendation-item">
+                    <i class="fas fa-database"></i>
+                    <span>
+                        <strong>InvocadorComandosRed:</strong> actúa como el Invoker del patrón; mantiene
+                        una pila (<code>Deque</code>) del historial de comandos ejecutados y expone
+                        <code>ejecutar()</code>, <code>deshacerUltimo()</code> y <code>obtenerHistorial()</code>.
+                    </span>
+                </div>
+
+                <div class="recommendation-item">
+                    <i class="fas fa-rotate-left"></i>
+                    <span>
+                        <strong>Soporte Undo:</strong> cada comando guarda el valor anterior antes de aplicar
+                        el cambio, lo que permite revertir cualquier modificación de configuración de red
+                        de forma segura e independiente.
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i> Datos en tiempo real desde API REST &nbsp;|&nbsp;
+            <i class="fas fa-terminal"></i> Patrón Command — InvocadorComandosRed
+        </div>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let comandosTipoChart = null;
+    let distribucionChart = null;
+
+    /* ── Utilidades ── */
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+
+                const currentPage = window.location.pathname
+                    .split('/')
+                    .pop()
+                    .replace('.html', '');
+
+                const activeLink = document.querySelector(
+                    `#sidebar-container a[data-page="${currentPage}"]`
+                );
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', () => {
+                        button.closest('.menu-dropdown').classList.toggle('open');
+                    });
+                });
+
+                const activeReportLink = document.querySelector(
+                    `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+                );
+
+                if (activeReportLink) {
+                    activeReportLink.classList.add('active');
+                    activeReportLink.closest('.menu-dropdown').classList.add('open');
+                }
+
+                const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+                if (logoutBtnGlobal) {
+                    logoutBtnGlobal.addEventListener('click', cerrarSesion);
+                }
+            })
+            .catch(error => console.error('Error cargando menú:', error));
+    }
+
+    function updateDate() {
+        const now = new Date();
+
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted.charAt(0).toUpperCase() + formatted.slice(1)}`;
+    }
+
+    function formatearNumero(valor) {
+        return Number(valor || 0).toLocaleString('es-CO');
+    }
+
+    /* ── Clasificar tipo de comando a partir del nombre ── */
+    function clasificarTipo(nombre) {
+        if (!nombre) return 'Desconocido';
+        if (nombre.startsWith('ActualizarLimiteConsumo')) return 'LímiteConsumo';
+        if (nombre.startsWith('CambiarFuenteEnergia'))   return 'FuenteEnergía';
+        if (nombre.startsWith('CambiarNivelAlerta'))      return 'NivelAlerta';
+        return 'Otro';
+    }
+
+    /* ── Cargar historial desde el invocador ── */
+    async function cargarHistorial() {
+        try {
+            const response = await fetch('/api/configuracion-red/historial');
+
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el historial de comandos');
+            }
+
+            const historial = await response.json();
+            actualizarKPIs(historial);
+            actualizarTablaHistorial(historial);
+            actualizarGraficos(historial);
+            actualizarRecomendaciones(historial);
+
+        } catch (error) {
+            console.error(error);
+
+            document.getElementById('tablaHistorial').innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding:16px;">
+                        <div class="empty-state">
+                            Error cargando el historial. Verifica el endpoint /api/configuracion-red/historial.
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            document.getElementById('recomendaciones').innerHTML = `
+                <div class="empty-state">
+                    No fue posible obtener recomendaciones del reporte.
+                </div>
+            `;
+        }
+    }
+
+    /* ── KPIs ── */
+    function actualizarKPIs(historial) {
+        const total   = historial.length;
+        const limites = historial.filter(n => n.startsWith('ActualizarLimiteConsumo')).length;
+        const fuentes = historial.filter(n => n.startsWith('CambiarFuenteEnergia')).length;
+        const niveles = historial.filter(n => n.startsWith('CambiarNivelAlerta')).length;
+
+        document.getElementById('kpiTotalComandos').innerText = formatearNumero(total);
+        document.getElementById('kpiLimites').innerText       = formatearNumero(limites);
+        document.getElementById('kpiFuentes').innerText       = formatearNumero(fuentes);
+        document.getElementById('kpiNiveles').innerText       = formatearNumero(niveles);
+        document.getElementById('kpiUltimo').innerText        = total > 0 ? historial[0] : '—';
+
+        document.getElementById('resumenEstado').innerText =
+            `Historial actual: ${total} comando${total !== 1 ? 's' : ''} en el InvocadorComandosRed.`;
+    }
+
+    /* ── Tabla ── */
+    function actualizarTablaHistorial(historial) {
+        const tbody = document.getElementById('tablaHistorial');
+        tbody.innerHTML = '';
+
+        if (!historial.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding:16px;">
+                        <div class="empty-state">
+                            El historial del invocador está vacío.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        historial.forEach((nombre, idx) => {
+            const tipo = clasificarTipo(nombre);
+
+            const colorMap = {
+                'LímiteConsumo': { bg: '#eff6ff', color: '#1d4ed8' },
+                'FuenteEnergía': { bg: '#f0fdf4', color: '#166534' },
+                'NivelAlerta':   { bg: '#fefce8', color: '#854d0e' },
+                'Otro':          { bg: '#f8fafc', color: '#475569' }
+            };
+
+            const estilo = colorMap[tipo] || colorMap['Otro'];
+
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid #e2e8f0';
+
+            row.innerHTML = `
+                <td style="padding:12px; color:#94a3b8;">${idx + 1}</td>
+                <td style="padding:12px;"><strong>${nombre}</strong></td>
+                <td style="padding:12px;">
+                    <span style="background:${estilo.bg}; color:${estilo.color}; padding:4px 12px;
+                                 border-radius:40px; font-size:0.78rem; font-weight:600;">
+                        ${tipo}
+                    </span>
+                </td>
+                <td style="padding:12px;">
+                    <span style="background:#dcfce7; color:#166534; padding:4px 12px;
+                                 border-radius:40px; font-size:0.78rem; font-weight:600;">
+                        Ejecutado
+                    </span>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    }
+
+    /* ── Gráficos ── */
+    function actualizarGraficos(historial) {
+        const limites = historial.filter(n => n.startsWith('ActualizarLimiteConsumo')).length;
+        const fuentes = historial.filter(n => n.startsWith('CambiarFuenteEnergia')).length;
+        const niveles = historial.filter(n => n.startsWith('CambiarNivelAlerta')).length;
+
+        /* Barras */
+        const ctxBar = document.getElementById('comandosTipoChart').getContext('2d');
+
+        if (comandosTipoChart) {
+            comandosTipoChart.destroy();
+        }
+
+        comandosTipoChart = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Límite Consumo', 'Fuente Energía', 'Nivel Alerta'],
+                datasets: [{
+                    label: 'Comandos ejecutados',
+                    data: [limites, fuentes, niveles],
+                    backgroundColor: ['#bfdbfe', '#bbf7d0', '#fef08a'],
+                    borderColor:     ['#3b82f6', '#16a34a', '#f59e0b'],
+                    borderWidth: 2,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.dataset.label}: ${formatearNumero(ctx.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+
+        /* Doughnut */
+        const ctxDoughnut = document.getElementById('distribucionChart').getContext('2d');
+
+        if (distribucionChart) {
+            distribucionChart.destroy();
+        }
+
+        distribucionChart = new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Límite Consumo', 'Fuente Energía', 'Nivel Alerta'],
+                datasets: [{
+                    data: [limites, fuentes, niveles],
+                    backgroundColor: ['#bfdbfe', '#bbf7d0', '#fef08a'],
+                    borderColor:     ['#3b82f6', '#16a34a', '#f59e0b'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.label}: ${formatearNumero(ctx.raw)} comandos`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /* ── Recomendaciones ── */
+    function actualizarRecomendaciones(historial) {
+        const contenedor = document.getElementById('recomendaciones');
+        contenedor.innerHTML = '';
+
+        const recomendaciones = [];
+
+        if (historial.length === 0) {
+            recomendaciones.push('El historial del invocador está vacío. Ejecute al menos un comando para activar el seguimiento.');
+        }
+
+        if (historial.length > 10) {
+            recomendaciones.push(`El historial acumula ${historial.length} comandos. Considere limpiar el historial para liberar memoria del invocador.`);
+        }
+
+        const nivelCritico = historial.filter(n => n.includes('CRITICO')).length;
+        if (nivelCritico > 0) {
+            recomendaciones.push(`Se detectaron ${nivelCritico} comando(s) que establecieron nivel CRITICO. Revise las configuraciones afectadas.`);
+        }
+
+        const fuentesSolar = historial.filter(n => n.includes('SOLAR')).length;
+        if (fuentesSolar > 0) {
+            recomendaciones.push(`${fuentesSolar} operación(es) involucran configuraciones SOLAR. Verifique que los límites sean coherentes con la capacidad instalada.`);
+        }
+
+        if (recomendaciones.length === 0) {
+            recomendaciones.push('El historial de comandos está en un estado normal. El patrón Command garantiza trazabilidad y reversibilidad de todas las operaciones.');
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${texto}</span>
+            `;
+            contenedor.appendChild(item);
+        });
+    }
+
+    /* ── Ejecutar comando vía API ── */
+    async function ejecutarComando(payload) {
+        try {
+            const response = await fetch('/api/configuracion-red/comando', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al ejecutar el comando');
+            }
+
+            const resultado = await response.text();
+            mostrarFeedback(resultado || 'Comando ejecutado correctamente.', false);
+            await cargarHistorial();
+
+        } catch (error) {
+            console.error(error);
+            mostrarFeedback('Error al ejecutar el comando. Verifica el endpoint /api/configuracion-red/comando.', true);
+        }
+    }
+
+    /* ── Deshacer último comando ── */
+    async function deshacerUltimoComando() {
+        try {
+            const response = await fetch('/api/configuracion-red/deshacer', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error('Error al deshacer el último comando');
+            }
+
+            const resultado = await response.text();
+            mostrarFeedback(resultado || 'Último comando deshecho correctamente.', false);
+            await cargarHistorial();
+
+        } catch (error) {
+            console.error(error);
+            mostrarFeedback('Error al deshacer el comando. Verifica el endpoint /api/configuracion-red/deshacer.', true);
+        }
+    }
+
+    /* ── Feedback visual ── */
+    function mostrarFeedback(mensaje, esError) {
+        const div  = document.getElementById('feedbackComando');
+        const span = document.getElementById('feedbackMensaje');
+
+        span.innerText       = mensaje;
+        div.style.display    = 'flex';
+        div.style.gap        = '10px';
+        div.style.alignItems = 'center';
+        div.style.background = esError ? '#fee2e2' : '#dcfce7';
+        div.style.borderColor= esError ? '#fca5a5' : '#86efac';
+        div.style.color      = esError ? '#b91c1c' : '#166534';
+
+        div.querySelector('i').className = esError
+            ? 'fas fa-circle-xmark'
+            : 'fas fa-check-circle';
+
+        setTimeout(() => { div.style.display = 'none'; }, 5000);
+    }
+
+    /* ── DOMContentLoaded ── */
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+        cargarHistorial();
+
+        document.getElementById('refreshBtn').addEventListener('click', cargarHistorial);
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        document.getElementById('deshacerBtn').addEventListener('click', deshacerUltimoComando);
+
+        document.getElementById('btnLimite').addEventListener('click', () => {
+            const tipoConfig = document.getElementById('tipoConfigLimite').value;
+            const nuevoLimite = parseFloat(document.getElementById('nuevoLimite').value);
+
+            if (isNaN(nuevoLimite) || nuevoLimite <= 0) {
+                mostrarFeedback('Ingrese un límite válido mayor a 0.', true);
+                return;
+            }
+
+            ejecutarComando({
+                tipoComando: 'ACTUALIZAR_LIMITE',
+                tipoConfig,
+                nuevoLimite
+            });
+        });
+
+        document.getElementById('btnFuente').addEventListener('click', () => {
+            ejecutarComando({
+                tipoComando: 'CAMBIAR_FUENTE',
+                tipoConfig:  document.getElementById('tipoConfigFuente').value,
+                nuevaFuente: document.getElementById('nuevaFuente').value
+            });
+        });
+
+        document.getElementById('btnAlerta').addEventListener('click', () => {
+            ejecutarComando({
+                tipoComando: 'CAMBIAR_NIVEL_ALERTA',
+                tipoConfig:  document.getElementById('tipoConfigAlerta').value,
+                nuevoNivel:  document.getElementById('nuevoNivel').value
+            });
+        });
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

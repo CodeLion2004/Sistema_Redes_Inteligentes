@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Gestión de Facturas</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/tables.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+
+<div class="app-wrapper">
+
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Gestión de Facturas</h1>
+                <p>
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Genera, administra y consulta facturas energéticas.
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+
+        <section class="kpi-section">
+
+            <div class="kpi-grid">
+
+                <div class="kpi-card">
+                    <span>Total facturas</span>
+                    <strong id="kpiFacturas">0</strong>
+                    <small>Facturas registradas</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Facturación total</span>
+                    <strong id="kpiTotal">$0</strong>
+                    <small>Ingresos acumulados</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Promedio factura</span>
+                    <strong id="kpiPromedio">$0</strong>
+                    <small>Promedio por factura</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Última factura</span>
+                    <strong id="kpiUltima">Sin registros</strong>
+                    <small>Última emisión</small>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- FORMULARIO -->
+
+        <section class="card">
+
+            <div class="flex-between mb-3">
+                <div>
+                    <h2>
+                        <i class="fas fa-plus-circle"></i>
+                        Generar factura
+                    </h2>
+
+                    <p class="text-muted mt-1">
+                        Genera una nueva factura energética inteligente.
+                    </p>
+                </div>
+            </div>
+
+            <form id="facturaForm">
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+                        <label>Usuario</label>
+
+                        <select id="usuarioSelect" required>
+                            <option value="">Cargando usuarios...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Consumo (kWh)</label>
+
+                        <input
+                                type="number"
+                                id="consumo"
+                                min="1"
+                                step="0.1"
+                                required
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo usuario</label>
+
+                        <select id="tipoUsuario">
+                            <option value="RESIDENCIAL">Residencial</option>
+                            <option value="COMERCIAL">Comercial</option>
+                            <option value="INDUSTRIAL">Industrial</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo facturación</label>
+
+                        <select id="tipoFacturacion">
+                            <option value="FacturacionResidencial">Residencial</option>
+                            <option value="FacturacionComercial">Comercial</option>
+                            <option value="FacturacionIndustrial">Industrial</option>
+                            <option value="FacturacionHoraPico">Hora Pico</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fuente energía</label>
+
+                        <select id="fuenteEnergia">
+                            <option value="SOLAR">Solar</option>
+                            <option value="EOLICA">Eólica</option>
+                            <option value="TRADICIONAL">Tradicional</option>
+                            <option value="NUCLEAR">Nuclear</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="submit-btn mt-3">
+                    <i class="fas fa-file-invoice"></i>
+                    Generar factura
+                </button>
+
+            </form>
+
+        </section>
+
+        <!-- RESULTADO FACTURA -->
+
+        <section
+                class="card"
+                id="resultadoFactura"
+                style="display:none;"
+        >
+
+            <h2>
+                <i class="fas fa-receipt"></i>
+                Resultado de facturación
+            </h2>
+
+            <div id="facturaDetalle" class="mt-3"></div>
+
+        </section>
+
+        <!-- TABLA -->
+
+        <section class="card">
+
+            <div class="flex-between mb-3">
+
+                <div>
+                    <h2>
+                        <i class="fas fa-table"></i>
+                        Facturas registradas
+                    </h2>
+
+                    <p class="text-muted mt-1">
+                        Historial completo de facturas.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- FILTROS -->
+
+            <div
+                    class="form-grid mb-3"
+                    style="grid-template-columns: repeat(auto-fit,minmax(220px,1fr));"
+            >
+
+                <div class="form-group">
+                    <label>Filtrar usuario</label>
+
+                    <select id="filtroUsuario">
+                        <option value="">Todos los usuarios</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>&nbsp;</label>
+
+                    <button
+                            type="button"
+                            id="btnFiltrar"
+                            class="submit-btn"
+                    >
+                        <i class="fas fa-filter"></i>
+                        Filtrar
+                    </button>
+                </div>
+
+                <div class="form-group">
+                    <label>&nbsp;</label>
+
+                    <button
+                            type="button"
+                            id="btnLimpiar"
+                            class="action-btn"
+                    >
+                        <i class="fas fa-rotate-left"></i>
+                        Limpiar
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- TABLA -->
+
+            <div class="table-container">
+
+                <table id="tablaFacturas">
+
+                    <thead>
+
+                    <tr>
+					    <th>ID</th>
+					    <th>Usuario</th>
+					    <th>Consumo</th>
+					    <th>Total</th>
+					    <th>Fuente</th>
+					    <th>Estado</th>
+					    <th>Fecha</th>
+					    <th>Acciones</th>
+					</tr>
+
+                    </thead>
+
+                    <tbody id="tbodyFacturas">
+
+                    <tr>
+                        <td colspan="7" class="table-empty">
+                            Cargando facturas...
+                        </td>
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<script>
+
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let usuariosSistema = [];
+    let usuariosMap = new Map();
+    let facturasActuales = [];
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function updateDate() {
+
+        const now = new Date();
+
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted}`;
+
+    }
+
+    async function cargarMenu() {
+
+        try {
+
+            const response = await fetch('/menu.html');
+            const data = await response.text();
+
+            document.getElementById('sidebar-container').innerHTML = data;
+
+            const currentPage = window.location.pathname
+                .split('/')
+                .pop()
+                .replace('.html', '');
+
+            const activeLink = document.querySelector(
+                `#sidebar-container a[data-page="${currentPage}"]`
+            );
+
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            document.querySelectorAll('.dropdown-toggle').forEach(button => {
+
+                button.addEventListener('click', () => {
+                    button.closest('.menu-dropdown')
+                        .classList.toggle('open');
+                });
+
+            });
+
+            const logoutBtn =
+                document.getElementById('logoutSidebarBtnGlobal');
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', cerrarSesion);
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+
+    async function cargarUsuarios() {
+
+        try {
+
+            const response = await fetch('/usuarios');
+
+            if (!response.ok) {
+                throw new Error('Error cargando usuarios');
+            }
+
+            usuariosSistema = await response.json();
+
+            const usuarioSelect =
+                document.getElementById('usuarioSelect');
+
+            const filtroUsuario =
+                document.getElementById('filtroUsuario');
+
+            usuarioSelect.innerHTML =
+                '<option value="">Seleccione un usuario</option>';
+
+            filtroUsuario.innerHTML =
+                '<option value="">Todos los usuarios</option>';
+
+            usuariosSistema.forEach(usuario => {
+
+		    if (usuario.rol === 'ADMIN') {
+		        return;
+		    }
+		
+		    usuariosMap.set(usuario.id, usuario.nombre);
+		
+		    usuarioSelect.innerHTML += `
+		        <option value="${usuario.id}">
+		            ${usuario.nombre}
+		        </option>
+		    `;
+		
+		    filtroUsuario.innerHTML += `
+		        <option value="${usuario.id}">
+		            ${usuario.nombre}
+		        </option>
+		    `;
+		
+		});
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+
+    async function generarFactura(e) {
+
+        e.preventDefault();
+
+        const payload = {
+
+            idUsuario:
+                document.getElementById('usuarioSelect').value,
+
+            consumo:
+                parseFloat(document.getElementById('consumo').value),
+
+            tipoFacturacion:
+                document.getElementById('tipoFacturacion').value,
+
+            tipoUsuario:
+                document.getElementById('tipoUsuario').value,
+
+            fuenteEnergia:
+                document.getElementById('fuenteEnergia').value
+
+        };
+
+        if (!payload.idUsuario || isNaN(payload.consumo)) {
+
+            alert('Completa todos los campos.');
+
+            return;
+
+        }
+
+        try {
+
+            const response = await fetch('/facturas', {
+
+                method: 'POST',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify(payload)
+
+            });
+
+            if (!response.ok) {
+
+                throw new Error('No se pudo generar la factura');
+
+            }
+
+            const factura = await response.json();
+
+            mostrarFactura(factura);
+
+            document.getElementById('facturaForm').reset();
+
+            cargarFacturas();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(error.message);
+
+        }
+
+    }
+
+    function mostrarFactura(factura) {
+
+        const usuario =
+            usuariosMap.get(factura.idUsuario) ||
+            'Usuario';
+
+        document.getElementById('facturaDetalle').innerHTML = `
+
+            <div class="result-row">
+                <strong>Usuario</strong>
+                <span>${usuario}</span>
+            </div>
+
+            <div class="result-row">
+                <strong>Consumo</strong>
+                <span>${factura.consumo} kWh</span>
+            </div>
+
+            <div class="result-row">
+                <strong>Subtotal</strong>
+                <span>$${factura.subtotal.toLocaleString('es-CO')}</span>
+            </div>
+
+            <div class="result-row">
+                <strong>Impuestos</strong>
+                <span>$${factura.impuestos.toLocaleString('es-CO')}</span>
+            </div>
+
+            <div class="result-row">
+                <strong>Descuento</strong>
+                <span>$${factura.descuento.toLocaleString('es-CO')}</span>
+            </div>
+
+            <div class="result-row total">
+                <strong>Total</strong>
+                <span>$${factura.total.toLocaleString('es-CO')}</span>
+            </div>
+
+        `;
+
+        document.getElementById('resultadoFactura')
+            .style.display = 'block';
+
+    }
+
+    async function cargarFacturas(usuarioId = '') {
+
+        try {
+
+            let url = '/facturas';
+
+            if (usuarioId) {
+                url += `?usuarioId=${usuarioId}`;
+            }
+
+            const response = await fetch(url);
+
+            if (!response.ok) {
+
+                throw new Error('Error cargando facturas');
+
+            }
+
+            const facturas = await response.json();
+
+            const facturasValidas = facturas.filter(f =>
+                usuariosMap.has(f.idUsuario)
+            );
+
+            facturasActuales = facturasValidas;
+
+            renderizarTablaFacturas(facturasValidas);
+
+            actualizarKPIs(facturasValidas);
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
+
+    }
+    
+    
+	    function obtenerClaseEstado(estado) {
+	    if (estado === 'PAGADA') return 'badge-success';
+	    if (estado === 'VENCIDA') return 'badge-warning';
+	    if (estado === 'ANULADA') return 'badge-danger';
+	    return 'badge-info';
+	}
+	
+	function obtenerEstadoFactura(factura) {
+	    return factura.estado || 'PENDIENTE';
+	}
+	
+	async function cambiarEstadoFactura(id, accion) {
+	    try {
+	        const response = await fetch(`/facturas/${id}/estado/${accion}`, {
+	            method: 'PUT'
+	        });
+	
+	        if (!response.ok) {
+	            const errorText = await response.text();
+	            throw new Error(errorText || 'No se pudo cambiar el estado');
+	        }
+	
+	        await cargarFacturas();
+	
+	    } catch (error) {
+	        console.error(error);
+	        alert('Error cambiando estado: ' + error.message);
+	    }
+}
+    
+    
+    
+    
+
+    function renderizarTablaFacturas(facturas) {
+    const tbody = document.getElementById('tbodyFacturas');
+
+    tbody.innerHTML = '';
+
+    if (!facturas.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="table-empty">
+                    No hay facturas registradas.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    facturas.forEach(f => {
+        const row = tbody.insertRow();
+        const estado = obtenerEstadoFactura(f);
+
+        row.insertCell(0).innerText = f.id;
+
+        row.insertCell(1).innerText =
+            usuariosMap.get(f.idUsuario) || 'Usuario no encontrado';
+
+        row.insertCell(2).innerText =
+            `${f.consumo} kWh`;
+
+        row.insertCell(3).innerHTML =
+            `<strong>$${Number(f.total).toLocaleString('es-CO')}</strong>`;
+
+        row.insertCell(4).innerText =
+            f.fuenteEnergia || 'Sin fuente';
+
+        const estadoCell = row.insertCell(5);
+        estadoCell.innerHTML = `
+            <span class="table-badge ${obtenerClaseEstado(estado)}">
+                ${estado}
+            </span>
+        `;
+
+        row.insertCell(6).innerText =
+            f.fechaEmision
+                ? new Date(f.fechaEmision).toLocaleDateString('es-ES')
+                : '—';
+
+        const acciones = row.insertCell(7);
+        acciones.className = 'table-actions';
+
+        const btnDetalle = document.createElement('button');
+        btnDetalle.type = 'button';
+        btnDetalle.className = 'table-btn edit-btn';
+        btnDetalle.innerHTML = '<i class="fas fa-eye"></i>';
+        btnDetalle.title = 'Ver detalle';
+        btnDetalle.onclick = () => mostrarFactura(f);
+
+        acciones.appendChild(btnDetalle);
+
+        if (estado === 'PENDIENTE' || estado === 'VENCIDA') {
+            const btnPagar = document.createElement('button');
+            btnPagar.type = 'button';
+            btnPagar.className = 'table-btn edit-btn';
+            btnPagar.innerHTML = '<i class="fas fa-check"></i>';
+            btnPagar.title = 'Marcar como pagada';
+            btnPagar.onclick = () => cambiarEstadoFactura(f.id, 'PAGAR');
+            acciones.appendChild(btnPagar);
+        }
+
+        if (estado === 'PENDIENTE') {
+            const btnVencer = document.createElement('button');
+            btnVencer.type = 'button';
+            btnVencer.className = 'table-btn';
+            btnVencer.style.background = '#fef3c7';
+            btnVencer.style.color = '#92400e';
+            btnVencer.innerHTML = '<i class="fas fa-clock"></i>';
+            btnVencer.title = 'Marcar como vencida';
+            btnVencer.onclick = () => cambiarEstadoFactura(f.id, 'VENCER');
+            acciones.appendChild(btnVencer);
+        }
+
+        if (estado !== 'PAGADA' && estado !== 'ANULADA') {
+            const btnAnularEstado = document.createElement('button');
+            btnAnularEstado.type = 'button';
+            btnAnularEstado.className = 'table-btn delete-btn';
+            btnAnularEstado.innerHTML = '<i class="fas fa-ban"></i>';
+            btnAnularEstado.title = 'Anular factura';
+            btnAnularEstado.onclick = () => cambiarEstadoFactura(f.id, 'ANULAR');
+            acciones.appendChild(btnAnularEstado);
+        }
+
+        const btnEliminar = document.createElement('button');
+        btnEliminar.type = 'button';
+        btnEliminar.className = 'table-btn delete-btn';
+        btnEliminar.innerHTML = '<i class="fas fa-trash"></i>';
+        btnEliminar.title = 'Eliminar factura';
+        btnEliminar.onclick = () => eliminarFactura(f.id);
+
+        acciones.appendChild(btnEliminar);
+    });
+}
+
+
+
+    async function eliminarFactura(id) {
+
+        if (!confirm('¿Eliminar factura?')) {
+            return;
+        }
+
+        try {
+
+            const response = await fetch(`/facturas/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+
+                throw new Error('No se pudo eliminar');
+
+            }
+
+            cargarFacturas();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(error.message);
+
+        }
+
+    }
+
+    function actualizarKPIs(facturas) {
+
+        document.getElementById('kpiFacturas')
+            .innerText = facturas.length;
+
+        const total =
+            facturas.reduce((sum, f) =>
+                sum + (f.total || 0), 0);
+
+        document.getElementById('kpiTotal')
+            .innerText =
+            `$${total.toLocaleString('es-CO')}`;
+
+        const promedio =
+            facturas.length
+                ? total / facturas.length
+                : 0;
+
+        document.getElementById('kpiPromedio')
+            .innerText =
+            `$${promedio.toLocaleString('es-CO')}`;
+
+        const ultima =
+            facturas[facturas.length - 1];
+
+        document.getElementById('kpiUltima')
+            .innerText =
+            ultima
+                ? new Date(ultima.fechaEmision)
+                    .toLocaleDateString('es-ES')
+                : 'Sin registros';
+
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+
+        updateDate();
+
+        setInterval(updateDate, 60000);
+
+        await cargarMenu();
+
+        await cargarUsuarios();
+
+        await cargarFacturas();
+
+        document.getElementById('facturaForm')
+            .addEventListener('submit', generarFactura);
+
+        document.getElementById('btnFiltrar')
+            .addEventListener('click', () => {
+
+                const usuarioId =
+                    document.getElementById('filtroUsuario').value;
+
+                cargarFacturas(usuarioId);
+
+            });
+
+        document.getElementById('btnLimpiar')
+            .addEventListener('click', () => {
+
+                document.getElementById('filtroUsuario').value = '';
+
+                cargarFacturas();
+
+            });
+
+    });
+
+</script>
+
+</body>
+</html>

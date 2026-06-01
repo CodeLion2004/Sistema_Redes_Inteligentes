@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Smart Grid | Reporte de Consumo</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+	<link rel="stylesheet" href="/css/layout.css">
+	<link rel="stylesheet" href="/css/sidebar.css">
+	<link rel="stylesheet" href="/css/dashboard.css">
+	<link rel="stylesheet" href="/css/cards.css">
+	<link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    fetch('/menu.html')
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById('sidebar-container').innerHTML = data;
+
+        const currentPage = window.location.pathname
+            .split('/')
+            .pop()
+            .replace('.html', '');
+
+        const activeLink = document.querySelector(
+            `#sidebar-container a[data-page="${currentPage}"]`
+        );
+
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+
+        document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                button.closest('.menu-dropdown').classList.toggle('open');
+            });
+        });
+
+        const activeReportLink = document.querySelector(
+            `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+        );
+
+        if (activeReportLink) {
+            activeReportLink.classList.add('active');
+            activeReportLink.closest('.menu-dropdown').classList.add('open');
+        }
+
+        const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+        if (logoutBtnGlobal) {
+            logoutBtnGlobal.addEventListener('click', cerrarSesion);
+        }
+    })
+    .catch(error => console.error('Error cargando el menú:', error));
+</script>
+
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Consumo</h1>
+                <p><i class="fas fa-chart-line"></i> Tendencias, KPIs y alertas de consumo energético</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="refresh-btn" id="refreshTopBtn">
+                    <i class="fas fa-sync-alt"></i> Actualizar gráfico
+                </button>
+
+                <button class="refresh-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <div class="kpi-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                    <h2><i class="fas fa-gauge-high"></i> Indicadores clave del periodo</h2>
+                    <p id="rangoReporte" style="color:#64748b; margin-top:6px;">Cargando rango analizado...</p>
+                </div>
+
+                <select id="periodoSelector" class="refresh-btn" style="background:#f8fafc;">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <span>Consumo total</span>
+                    <strong id="kpiTotal">0 kWh</strong>
+                    <small>Demanda acumulada</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Promedio diario</span>
+                    <strong id="kpiPromedio">0 kWh</strong>
+                    <small>Media por día con datos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Pico de consumo</span>
+                    <strong id="kpiMaximo">0 kWh</strong>
+                    <small id="kpiFechaPico">Sin datos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Mínimo registrado</span>
+                    <strong id="kpiMinimo">0 kWh</strong>
+                    <small>Base comparativa</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Registros analizados</span>
+                    <strong id="kpiRegistros">0</strong>
+                    <small>Lecturas procesadas</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-section">
+                <h2 style="margin-bottom:20px;">
+                    <i class="fas fa-chart-line"></i> Tendencia de consumo energético
+                </h2>
+
+                <canvas id="consumoChart" width="400" height="200" style="max-height:300px; width:100%;"></canvas>
+            </div>
+
+            <div class="chart-section">
+                <h2 style="margin-bottom:20px;">
+                    <i class="fas fa-bolt"></i> Consumo por fuente
+                </h2>
+
+                <canvas id="fuenteChart" width="300" height="240" style="max-height:300px; width:100%;"></canvas>
+            </div>
+        </div>
+
+        <div class="recommendation-section">
+            <h3><i class="fas fa-lightbulb"></i> Recomendaciones para toma de decisiones</h3>
+            <div id="recomendacionesReporte" class="recommendation-list"></div>
+        </div>
+
+        <div class="umbral-section">
+            <h3><i class="fas fa-exclamation-triangle"></i> Alerta por umbral de consumo</h3>
+
+            <div style="display:flex; gap:20px; align-items:flex-end; flex-wrap:wrap;">
+                <div>
+                    <label>Umbral máximo (kWh):</label>
+                    <input type="number" id="umbralInput" step="100" value="5000" style="padding:8px; border-radius:20px; border:1px solid #ccc;">
+                </div>
+
+                <button id="guardarUmbralBtn" class="refresh-btn">Guardar umbral</button>
+
+                <div id="alertaUmbral" style="background:#fee2e2; padding:8px 18px; border-radius:40px; display:none;">
+                    <i class="fas fa-bell"></i>
+                    <span id="alertaMensaje"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i> Datos en tiempo real desde API REST
+        </div>
+    </main>
+</div>
+
+<script>
+    function updateDate() {
+        const now = new Date();
+
+        const options = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        };
+
+        let formatted = now.toLocaleDateString('es-ES', options);
+        formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted}`;
+    }
+
+    let consumoChart = null;
+    let fuenteChart = null;
+
+    let umbralActual = localStorage.getItem('umbralConsumo')
+        ? parseFloat(localStorage.getItem('umbralConsumo'))
+        : 5000;
+
+    document.getElementById('umbralInput').value = umbralActual;
+
+    async function cargarTendencias(periodo) {
+        try {
+            const response = await fetch(`/api/consumo/tendencias?periodo=${periodo}`);
+
+            if (!response.ok) {
+                throw new Error('Error al cargar tendencias');
+            }
+
+            const data = await response.json();
+
+            actualizarKPIs(data);
+            actualizarGrafico(data.fechas || [], data.valores || []);
+            actualizarGraficoFuentes(data.consumoPorFuente || {});
+            actualizarRecomendaciones(data.recomendaciones || []);
+            verificarUmbral(data.consumoTotal || 0);
+
+        } catch (error) {
+            console.error(error);
+            mostrarAlertaUmbral('Error al cargar tendencias', true);
+        }
+    }
+
+    function formatearKwh(valor) {
+        return `${Number(valor || 0).toLocaleString('es-CO')} kWh`;
+    }
+
+    function actualizarKPIs(data) {
+        document.getElementById('kpiTotal').innerText = formatearKwh(data.consumoTotal);
+        document.getElementById('kpiPromedio').innerText = formatearKwh(data.consumoPromedio);
+        document.getElementById('kpiMaximo').innerText = formatearKwh(data.consumoMaximo);
+        document.getElementById('kpiMinimo').innerText = formatearKwh(data.consumoMinimo);
+
+        document.getElementById('kpiRegistros').innerText =
+            Number(data.totalRegistros || 0).toLocaleString('es-CO');
+
+        document.getElementById('kpiFechaPico').innerText =
+            data.fechaPico && data.fechaPico !== 'Sin datos'
+                ? `Fecha pico: ${data.fechaPico}`
+                : 'Sin datos';
+
+        document.getElementById('rangoReporte').innerText =
+            `Periodo: ${data.periodo || 'semana'} | Rango: ${data.fechaInicio || '-'} a ${data.fechaFin || '-'}`;
+    }
+
+    function actualizarGrafico(fechas, valores) {
+        const ctx = document.getElementById('consumoChart').getContext('2d');
+
+        if (consumoChart) {
+            consumoChart.destroy();
+        }
+
+        consumoChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: fechas,
+                datasets: [{
+                    label: 'Consumo (kWh)',
+                    data: valores,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59,130,246,0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${Number(ctx.raw || 0).toLocaleString('es-CO')} kWh`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoFuentes(consumoPorFuente) {
+        const ctx = document.getElementById('fuenteChart').getContext('2d');
+
+        const labels = Object.keys(consumoPorFuente);
+        const valores = Object.values(consumoPorFuente);
+
+        if (fuenteChart) {
+            fuenteChart.destroy();
+        }
+
+        fuenteChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Consumo por fuente',
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.label}: ${Number(ctx.raw || 0).toLocaleString('es-CO')} kWh`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarRecomendaciones(recomendaciones) {
+        const contenedor = document.getElementById('recomendacionesReporte');
+        contenedor.innerHTML = '';
+
+        if (!recomendaciones.length) {
+            recomendaciones = ['No hay recomendaciones disponibles para este periodo.'];
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `<i class="fas fa-check-circle"></i><span>${texto}</span>`;
+            contenedor.appendChild(item);
+        });
+    }
+
+    function verificarUmbral(consumoTotal) {
+        if (consumoTotal > umbralActual) {
+            mostrarAlertaUmbral(
+                `⚠️ El consumo total (${consumoTotal.toLocaleString('es-CO')} kWh) supera el umbral de ${umbralActual.toLocaleString('es-CO')} kWh`
+            );
+        } else {
+            ocultarAlertaUmbral();
+        }
+    }
+
+    function mostrarAlertaUmbral(mensaje, esError = false) {
+        const div = document.getElementById('alertaUmbral');
+        const span = document.getElementById('alertaMensaje');
+
+        span.innerText = mensaje;
+        div.style.display = 'flex';
+        div.style.background = esError ? '#fee2e2' : '#fff3cd';
+        div.style.color = esError ? '#b91c1c' : '#856404';
+    }
+
+    function ocultarAlertaUmbral() {
+        document.getElementById('alertaUmbral').style.display = 'none';
+    }
+
+    function logout() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDate();
+        cargarTendencias('semana');
+
+        document.getElementById('refreshTopBtn').addEventListener('click', () => {
+            cargarTendencias(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('periodoSelector').addEventListener('change', () => {
+            cargarTendencias(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('guardarUmbralBtn').addEventListener('click', () => {
+            const nuevo = parseFloat(document.getElementById('umbralInput').value);
+
+            if (!isNaN(nuevo) && nuevo > 0) {
+                umbralActual = nuevo;
+                localStorage.setItem('umbralConsumo', umbralActual);
+                alert(`Umbral guardado: ${umbralActual} kWh`);
+                cargarTendencias(document.getElementById('periodoSelector').value);
+            } else {
+                alert('Valor inválido');
+            }
+        });
+
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logout);
+        }
+
+        setInterval(updateDate, 60000);
+
+        setInterval(() => {
+            cargarTendencias(document.getElementById('periodoSelector').value);
+        }, 60000);
+    });
+</script>
+</body>
+</html>

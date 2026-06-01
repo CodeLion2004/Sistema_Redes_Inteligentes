@@ -1,0 +1,128 @@
+/* =========================
+   DISPLAY
+========================= */
+
+.hidden {
+    display: none !important;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* =========================
+   WIDTH
+========================= */
+
+.w-100 {
+    width: 100%;
+}
+
+/* =========================
+   MARGIN TOP
+========================= */
+
+.mt-1 {
+    margin-top: 8px;
+}
+
+.mt-2 {
+    margin-top: 16px;
+}
+
+.mt-3 {
+    margin-top: 24px;
+}
+
+.mt-4 {
+    margin-top: 32px;
+}
+
+/* =========================
+   TEXT COLORS
+========================= */
+
+.text-success {
+    color: #16a34a;
+}
+
+.text-danger {
+    color: #dc2626;
+}
+
+.text-warning {
+    color: #d97706;
+}
+
+.text-info {
+    color: #0284c7;
+}
+
+.text-muted {
+    color: #64748b;
+}
+
+/* =========================
+   BACKGROUNDS
+========================= */
+
+.bg-success {
+    background: #dcfce7;
+}
+
+.bg-danger {
+    background: #fee2e2;
+}
+
+.bg-warning {
+    background: #fef3c7;
+}
+
+.bg-info {
+    background: #e0f2fe;
+}
+
+/* =========================
+   TEXT ALIGN
+========================= */
+
+.text-center {
+    text-align: center;
+}
+
+.text-right {
+    text-align: right;
+}
+
+/* =========================
+   BORDER RADIUS
+========================= */
+
+.rounded {
+    border-radius: 12px;
+}
+
+.rounded-lg {
+    border-radius: 20px;
+}
+
+.rounded-xl {
+    border-radius: 28px;
+}

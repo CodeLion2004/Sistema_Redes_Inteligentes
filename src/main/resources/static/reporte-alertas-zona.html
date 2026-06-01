@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Alertas por Zona</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportes.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Alertas por Zona</h1>
+                <p>
+                    <i class="fas fa-triangle-exclamation"></i>
+                    Análisis de riesgo operativo usando Bridge, Template Method y Chain of Responsibility
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Salir
+                </button>
+            </div>
+        </div>
+
+        <section class="kpi-section">
+            <div class="flex-between" style="gap:16px; flex-wrap:wrap;">
+                <div>
+                    <h2>
+                        <i class="fas fa-bell"></i>
+                        Indicadores de alertas
+                    </h2>
+                    <p id="resumenPeriodo" class="text-muted mt-1">
+                        Cargando reporte avanzado...
+                    </p>
+                </div>
+
+                <select id="periodoSelector" class="action-btn">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid mt-3">
+                <div class="kpi-card">
+                    <span>Zonas analizadas</span>
+                    <strong id="kpiTotalZonas">0</strong>
+                    <small>Zonas con usuarios o consumos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total alertas</span>
+                    <strong id="kpiTotalAlertas">0</strong>
+                    <small>Preventivas + críticas</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Alertas preventivas</span>
+                    <strong id="kpiPreventivas">0</strong>
+                    <small>Consumo elevado</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Alertas críticas</span>
+                    <strong id="kpiCriticas">0</strong>
+                    <small>Consumo en riesgo alto</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Zona mayor riesgo</span>
+                    <strong id="kpiZonaRiesgo">Sin datos</strong>
+                    <small>Mayor número de alertas</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Nivel global</span>
+                    <strong id="kpiNivelGlobal">BAJO</strong>
+                    <small>Estimación general</small>
+                </div>
+            </div>
+        </section>
+
+        <div class="charts-grid">
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-chart-column"></i>
+                    Alertas por zona
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="alertasZonaChart" height="130"></canvas>
+                </div>
+            </section>
+
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-gauge-high"></i>
+                    Consumo promedio por zona
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="consumoPromedioChart" height="130"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <section class="chart-section">
+            <h2>
+                <i class="fas fa-chart-pie"></i>
+                Distribución de severidad
+            </h2>
+            <div class="chart-wrapper">
+                <canvas id="severidadChart" height="90"></canvas>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2>
+                <i class="fas fa-table"></i>
+                Detalle de alertas por zona
+            </h2>
+
+            <div class="chart-wrapper" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                    <tr style="text-align:left; border-bottom:1px solid #e2e8f0;">
+                        <th style="padding:12px;">Zona</th>
+                        <th style="padding:12px;">Usuarios</th>
+                        <th style="padding:12px;">Consumos</th>
+                        <th style="padding:12px;">Consumo total</th>
+                        <th style="padding:12px;">Promedio</th>
+                        <th style="padding:12px;">Preventivas</th>
+                        <th style="padding:12px;">Críticas</th>
+                        <th style="padding:12px;">Total alertas</th>
+                        <th style="padding:12px;">Riesgo</th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="tablaZonas">
+                    <tr>
+                        <td colspan="9" style="padding:16px; color:#64748b;">
+                            Cargando información...
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="recommendation-section">
+            <h3>
+                <i class="fas fa-lightbulb"></i>
+                Recomendaciones del reporte
+            </h3>
+
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <section class="recommendation-section">
+            <h3>
+                <i class="fas fa-network-wired"></i>
+                Relación con patrones de diseño
+            </h3>
+
+            <div class="recommendation-list">
+                <div class="recommendation-item">
+                    <i class="fas fa-code-branch"></i>
+                    <span>
+                        <strong>Bridge:</strong> el reporte complementa la lógica de alertas separando el concepto de alerta del canal de notificación.
+                    </span>
+                </div>
+
+                <div class="recommendation-item">
+                    <i class="fas fa-layer-group"></i>
+                    <span>
+                        <strong>Template Method:</strong> el backend reutiliza el flujo obtener datos, procesar métricas y construir respuesta.
+                    </span>
+                </div>
+
+                <div class="recommendation-item">
+                    <i class="fas fa-link"></i>
+                    <span>
+                        <strong>Chain of Responsibility:</strong> valida periodo, rol y disponibilidad de datos antes de generar el reporte.
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i>
+            Reporte generado desde API REST:
+            /api/reportes-avanzados/alertas-zona
+        </div>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let alertasZonaChart = null;
+    let consumoPromedioChart = null;
+    let severidadChart = null;
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+
+                const currentPage = window.location.pathname
+                    .split('/')
+                    .pop()
+                    .replace('.html', '');
+
+                const activeLink = document.querySelector(
+                    `#sidebar-container a[data-page="${currentPage}"]`
+                );
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', () => {
+                        button.closest('.menu-dropdown').classList.toggle('open');
+                    });
+                });
+
+                const activeReportLink = document.querySelector(
+                    `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+                );
+
+                if (activeReportLink) {
+                    activeReportLink.classList.add('active');
+                    activeReportLink.closest('.menu-dropdown').classList.add('open');
+                }
+
+                const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+                if (logoutBtnGlobal) {
+                    logoutBtnGlobal.addEventListener('click', cerrarSesion);
+                }
+            })
+            .catch(error => console.error('Error cargando menú:', error));
+    }
+
+    function updateDate() {
+        const now = new Date();
+
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted.charAt(0).toUpperCase() + formatted.slice(1)}`;
+    }
+
+    function obtenerRolApi() {
+        return rol === 'admin' ? 'ADMIN' : 'USER';
+    }
+
+    function formatearNumero(valor) {
+        return Number(valor || 0).toLocaleString('es-CO');
+    }
+
+    function formatearDecimal(valor) {
+        return Number(valor || 0).toLocaleString('es-CO', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function calcularNivelGlobal(data) {
+        const criticas = Number(data.totalAlertasCriticas || 0);
+        const preventivas = Number(data.totalAlertasPreventivas || 0);
+        const total = Number(data.totalAlertas || 0);
+
+        if (criticas >= 5 || criticas > preventivas) {
+            return 'CRITICO';
+        }
+
+        if (criticas > 0 || total >= 8) {
+            return 'ALTO';
+        }
+
+        if (preventivas > 0 || total > 0) {
+            return 'MEDIO';
+        }
+
+        return 'BAJO';
+    }
+
+    async function cargarReporte(periodo) {
+        try {
+            const rolUsuario = obtenerRolApi();
+
+            const response = await fetch(
+                `/api/reportes-avanzados/alertas-zona?periodo=${periodo}&rolUsuario=${rolUsuario}`
+            );
+
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el reporte de alertas por zona');
+            }
+
+            const data = await response.json();
+
+            actualizarKPIs(data, periodo);
+            actualizarGraficoAlertasZona(data.zonas || []);
+            actualizarGraficoConsumoPromedio(data.zonas || []);
+            actualizarGraficoSeveridad(data);
+            actualizarTablaZonas(data.zonas || []);
+            actualizarRecomendaciones(data.recomendaciones || []);
+
+        } catch (error) {
+            console.error(error);
+
+            document.getElementById('tablaZonas').innerHTML = `
+                <tr>
+                    <td colspan="9" style="padding:16px;">
+                        <div class="empty-state">
+                            Error cargando el reporte. Verifica el endpoint
+                            /api/reportes-avanzados/alertas-zona.
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            document.getElementById('recomendaciones').innerHTML = `
+                <div class="empty-state">
+                    No fue posible obtener recomendaciones del reporte.
+                </div>
+            `;
+        }
+    }
+
+    function actualizarKPIs(data, periodo) {
+        document.getElementById('kpiTotalZonas').innerText =
+            formatearNumero(data.totalZonasAnalizadas);
+
+        document.getElementById('kpiTotalAlertas').innerText =
+            formatearNumero(data.totalAlertas);
+
+        document.getElementById('kpiPreventivas').innerText =
+            formatearNumero(data.totalAlertasPreventivas);
+
+        document.getElementById('kpiCriticas').innerText =
+            formatearNumero(data.totalAlertasCriticas);
+
+        document.getElementById('kpiZonaRiesgo').innerText =
+            data.zonaMayorRiesgo || 'Sin datos';
+
+        document.getElementById('kpiNivelGlobal').innerText =
+            calcularNivelGlobal(data);
+
+        document.getElementById('resumenPeriodo').innerText =
+            `Periodo analizado: ${periodo}. Reporte validado mediante Chain of Responsibility.`;
+    }
+
+    function actualizarGraficoAlertasZona(zonas) {
+        const ctx = document.getElementById('alertasZonaChart').getContext('2d');
+
+        const labels = zonas.map(item => item.zona);
+        const preventivas = zonas.map(item => item.alertasPreventivas);
+        const criticas = zonas.map(item => item.alertasCriticas);
+
+        if (alertasZonaChart) {
+            alertasZonaChart.destroy();
+        }
+
+        alertasZonaChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Preventivas',
+                        data: preventivas
+                    },
+                    {
+                        label: 'Críticas',
+                        data: criticas
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${formatearNumero(ctx.raw)} alertas`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoConsumoPromedio(zonas) {
+        const ctx = document.getElementById('consumoPromedioChart').getContext('2d');
+
+        const labels = zonas.map(item => item.zona);
+        const valores = zonas.map(item => item.consumoPromedio);
+
+        if (consumoPromedioChart) {
+            consumoPromedioChart.destroy();
+        }
+
+        consumoPromedioChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Consumo promedio',
+                    data: valores,
+                    tension: 0.35,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${formatearDecimal(ctx.raw)} kWh`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoSeveridad(data) {
+        const ctx = document.getElementById('severidadChart').getContext('2d');
+
+        const valores = [
+            Number(data.totalAlertasPreventivas || 0),
+            Number(data.totalAlertasCriticas || 0)
+        ];
+
+        if (severidadChart) {
+            severidadChart.destroy();
+        }
+
+        severidadChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Preventivas', 'Críticas'],
+                datasets: [{
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.label}: ${formatearNumero(ctx.raw)} alertas`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarTablaZonas(zonas) {
+        const tbody = document.getElementById('tablaZonas');
+        tbody.innerHTML = '';
+
+        if (!zonas.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="padding:16px;">
+                        <div class="empty-state">
+                            No hay zonas disponibles para el periodo seleccionado.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        zonas.forEach(item => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid #e2e8f0';
+
+            row.innerHTML = `
+                <td style="padding:12px;">
+                    <strong>${item.zona}</strong>
+                </td>
+                <td style="padding:12px;">
+                    ${formatearNumero(item.totalUsuarios)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearNumero(item.totalConsumos)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearDecimal(item.consumoTotal)} kWh
+                </td>
+                <td style="padding:12px;">
+                    ${formatearDecimal(item.consumoPromedio)} kWh
+                </td>
+                <td style="padding:12px;">
+                    ${formatearNumero(item.alertasPreventivas)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearNumero(item.alertasCriticas)}
+                </td>
+                <td style="padding:12px;">
+                    <strong>${formatearNumero(item.totalAlertas)}</strong>
+                </td>
+                <td style="padding:12px;">
+                    <span style="font-weight:700;">
+                        ${item.nivelRiesgo}
+                    </span>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function actualizarRecomendaciones(recomendaciones) {
+        const contenedor = document.getElementById('recomendaciones');
+        contenedor.innerHTML = '';
+
+        if (!recomendaciones.length) {
+            recomendaciones = ['No hay recomendaciones disponibles para este periodo.'];
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${texto}</span>
+            `;
+            contenedor.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+        cargarReporte('semana');
+
+        document.getElementById('periodoSelector').addEventListener('change', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

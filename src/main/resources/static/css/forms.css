@@ -1,0 +1,128 @@
+/* =========================
+   FORM LAYOUT
+========================= */
+
+.form-grid {
+    display: grid;
+    gap: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 12px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #38bdf8;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+}
+
+/* =========================
+   SUBMIT BUTTON
+========================= */
+
+.submit-btn {
+    margin-top: 8px;
+    background: linear-gradient(135deg,#0284c7,#2563eb);
+    color: white;
+    border: none;
+    padding: 13px 20px;
+    border-radius: 40px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(37,99,235,0.25);
+}
+
+/* =========================
+   QUICK ACTIONS
+========================= */
+
+.quick-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.quick-btn {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 18px;
+    padding: 14px;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.2s ease;
+}
+
+.quick-btn:hover {
+    background: #ecfeff;
+    border-color: #67e8f9;
+}
+
+.quick-btn strong {
+    display: block;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.quick-btn span {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+/* =========================
+   MESSAGES
+========================= */
+
+.message {
+    margin-top: 18px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    font-weight: 500;
+}
+
+.message.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #86efac;
+}
+
+.message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Gestión de Usuarios</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/tables.css">
+    <link rel="stylesheet" href="/css/usuarios.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    fetch('/menu.html')
+        .then(response => response.text())
+        .then(data => {
+            document.getElementById('sidebar-container').innerHTML = data;
+
+            const currentPage = window.location.pathname.split('/').pop().replace('.html', '');
+            const activeLink = document.querySelector(`#sidebar-container a[data-page="${currentPage}"]`);
+
+            if (activeLink) activeLink.classList.add('active');
+
+            document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.closest('.menu-dropdown').classList.toggle('open');
+                });
+            });
+
+            const activeReportLink = document.querySelector(
+                `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+            );
+
+            if (activeReportLink) {
+                activeReportLink.classList.add('active');
+                activeReportLink.closest('.menu-dropdown').classList.add('open');
+            }
+
+            const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+            if (logoutBtnGlobal) logoutBtnGlobal.addEventListener('click', cerrarSesion);
+        })
+        .catch(err => console.error('Error cargando menú:', err));
+</script>
+
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Gestión de Usuarios</h1>
+                <p><i class="fas fa-users"></i> Administra los usuarios del sistema</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+            </div>
+        </div>
+
+        <section class="card">
+            <div class="users-header">
+                <div>
+                    <h2><i class="fas fa-user-gear"></i> Usuarios registrados</h2>
+                    <p class="text-muted mt-1">Crea, edita y elimina usuarios del sistema.</p>
+                </div>
+
+                <button type="button" class="submit-btn" id="btnAgregar">
+                    <i class="fas fa-plus"></i> Nuevo Usuario
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table id="tablaUsuarios">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Zona</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tbodyUsuarios">
+                        <tr>
+                            <td colspan="6" class="table-empty">Cargando usuarios...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="modalUsuario" class="modal">
+    <div class="modal-content">
+        <h2 id="modalTitle">Agregar Usuario</h2>
+
+        <form id="usuarioForm">
+            <input type="hidden" id="userId">
+
+            <div class="form-group">
+                <label>Nombre completo *</label>
+                <input type="text" id="nombre" required>
+            </div>
+
+            <div class="form-group">
+                <label>Correo electrónico *</label>
+                <input type="email" id="correo" required>
+            </div>
+
+            <div class="form-group">
+                <label for="zona">Zona *</label>
+                <select id="zona" required>
+                    <option value="">Seleccione una zona</option>
+                    <option value="NORTE">Zona Norte</option>
+                    <option value="SUR">Zona Sur</option>
+                    <option value="CENTRO">Zona Centro</option>
+                    <option value="ORIENTE">Zona Oriente</option>
+                    <option value="OCCIDENTE">Zona Occidente</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="contrasena" placeholder="Mínimo 6 caracteres para nueva contraseña">
+            </div>
+
+            <div class="form-group">
+                <label>Rol</label>
+                <select id="rol">
+                    <option value="ADMIN">Administrador</option>
+                    <option value="USER">Usuario</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap;">
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+
+                <button type="button" id="cancelarModal" class="action-btn">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function updateDate() {
+        const now = new Date();
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted.charAt(0).toUpperCase() + formatted.slice(1)}`;
+    }
+
+    function obtenerClaseRol(rol) {
+        if (rol === 'ADMIN') return 'role-admin';
+        return 'role-user';
+    }
+
+    function formatearZona(zona) {
+        if (!zona) return 'Sin zona';
+
+        const zonas = {
+            NORTE: 'Zona Norte',
+            SUR: 'Zona Sur',
+            CENTRO: 'Zona Centro',
+            ORIENTE: 'Zona Oriente',
+            OCCIDENTE: 'Zona Occidente'
+        };
+
+        return zonas[zona] || zona;
+    }
+
+    async function fetchAuth(url, options = {}) {
+        const res = await fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+
+        if (res.status === 401) {
+            alert('Sesión expirada. Redirigiendo...');
+            localStorage.clear();
+            window.location.href = 'index.html';
+            throw new Error('No autorizado');
+        }
+
+        return res;
+    }
+
+    async function cargarUsuarios() {
+        const tbody = document.getElementById('tbodyUsuarios');
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="table-empty">Cargando...</td>
+            </tr>
+        `;
+
+        try {
+            const res = await fetchAuth('/usuarios');
+
+            if (!res.ok) {
+                throw new Error('Error al obtener usuarios');
+            }
+
+            const usuarios = await res.json();
+
+            if (!usuarios.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="table-empty">No hay usuarios registrados.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            usuarios.forEach(u => {
+                const row = tbody.insertRow();
+
+                row.insertCell(0).innerText = u.id || '-';
+                row.insertCell(1).innerText = u.nombre || '-';
+                row.insertCell(2).innerText = u.correo || '-';
+
+                const rolCell = row.insertCell(3);
+                rolCell.innerHTML = `
+                    <span class="${obtenerClaseRol(u.rol)}">
+                        ${u.rol || 'USER'}
+                    </span>
+                `;
+
+                row.insertCell(4).innerText = formatearZona(u.zona);
+
+                const accCell = row.insertCell(5);
+                accCell.className = 'table-actions';
+
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'table-btn edit-btn';
+                editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+                editBtn.onclick = () => editarUsuario(u);
+
+                const delBtn = document.createElement('button');
+                delBtn.type = 'button';
+                delBtn.className = 'table-btn delete-btn';
+                delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+                delBtn.onclick = () => eliminarUsuario(u.id);
+
+                accCell.appendChild(editBtn);
+                accCell.appendChild(delBtn);
+            });
+
+        } catch (err) {
+            console.error(err);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-empty">
+                        Error al cargar usuarios. Verifica la conexión.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    function editarUsuario(usuario) {
+        document.getElementById('userId').value = usuario.id || '';
+        document.getElementById('nombre').value = usuario.nombre || '';
+        document.getElementById('correo').value = usuario.correo || '';
+        document.getElementById('zona').value = usuario.zona || '';
+        document.getElementById('rol').value = usuario.rol || 'USER';
+        document.getElementById('contrasena').value = '';
+
+        document.getElementById('modalTitle').innerText = 'Editar Usuario';
+        document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    async function eliminarUsuario(id) {
+        if (!confirm('¿Eliminar este usuario permanentemente?')) return;
+
+        try {
+            const res = await fetchAuth(`/usuarios/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                await cargarUsuarios();
+            } else {
+                alert('Error al eliminar el usuario');
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Error de red o servidor');
+        }
+    }
+
+    function abrirModalNuevo() {
+        document.getElementById('usuarioForm').reset();
+        document.getElementById('userId').value = '';
+        document.getElementById('modalTitle').innerText = 'Agregar Usuario';
+        document.getElementById('modalUsuario').style.display = 'flex';
+    }
+
+    function cerrarModal() {
+        document.getElementById('modalUsuario').style.display = 'none';
+    }
+
+    async function guardarUsuario(e) {
+        e.preventDefault();
+
+        const id = document.getElementById('userId').value;
+
+        const payload = {
+            nombre: document.getElementById('nombre').value.trim(),
+            correo: document.getElementById('correo').value.trim(),
+            contrasena: document.getElementById('contrasena').value,
+            rol: document.getElementById('rol').value,
+            zona: document.getElementById('zona').value
+        };
+
+        if (!payload.nombre || !payload.correo || !payload.rol || !payload.zona) {
+            alert('Nombre, correo, rol y zona son obligatorios');
+            return;
+        }
+
+        if (!id && !payload.contrasena) {
+            alert('La contraseña es obligatoria para crear un nuevo usuario.');
+            return;
+        }
+
+        if (payload.contrasena && payload.contrasena.length < 6) {
+            alert('La contraseña debe tener mínimo 6 caracteres.');
+            return;
+        }
+
+        if (id && !payload.contrasena) {
+            delete payload.contrasena;
+        }
+
+        const url = id ? `/usuarios/${id}` : '/usuarios';
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const res = await fetchAuth(url, {
+                method,
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                cerrarModal();
+                await cargarUsuarios();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Error: ${errorData.mensaje || 'No se pudo guardar el usuario'}`);
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Error al conectar con el servidor');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDate();
+        cargarUsuarios();
+
+        document.getElementById('btnAgregar').addEventListener('click', abrirModalNuevo);
+        document.getElementById('cancelarModal').addEventListener('click', cerrarModal);
+        document.getElementById('usuarioForm').addEventListener('submit', guardarUsuario);
+
+        window.onclick = function(e) {
+            const modal = document.getElementById('modalUsuario');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

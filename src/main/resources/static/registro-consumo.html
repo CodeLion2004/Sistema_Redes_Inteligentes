@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Consumo | Smart Grid</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+    <link rel="stylesheet" href="/css/registro-consumo.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Registro de Consumo</h1>
+                <p>
+                    <i class="fas fa-bolt"></i>
+                    Gestión de lecturas energéticas de dispositivos externos
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+
+                <button class="action-btn logout-action" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Salir
+                </button>
+            </div>
+        </div>
+
+        <section class="form-section">
+            <h2 id="formTitle">
+                <i class="fas fa-pen-to-square"></i>
+                Nueva lectura energética externa
+            </h2>
+
+            <form id="consumoForm" class="form-grid mt-3">
+                <input type="hidden" id="consumoId">
+
+                <div class="form-group">
+                    <label for="idDispositivo">ID del dispositivo</label>
+                    <input type="text" id="idDispositivo" placeholder="Ej: MED-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="consumo">Consumo registrado</label>
+                    <input type="number" id="consumo" placeholder="Ej: 850" min="0" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fuenteEnergia">Fuente de energía</label>
+                    <select id="fuenteEnergia" required>
+                        <option value="">Selecciona una fuente</option>
+                        <option value="Red eléctrica">Red eléctrica</option>
+                        <option value="Solar">Solar</option>
+                        <option value="Eólica">Eólica</option>
+                        <option value="Hidroeléctrica">Hidroeléctrica</option>
+                        <option value="Mixta">Mixta</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="marcaTiempo">Fecha y hora</label>
+                    <input type="datetime-local" id="marcaTiempo" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <i class="fas fa-save"></i>
+                        Guardar consumo
+                    </button>
+
+                    <button type="button" class="action-btn hidden" id="cancelEditBtn">
+                        <i class="fas fa-xmark"></i>
+                        Cancelar edición
+                    </button>
+                </div>
+            </form>
+
+            <div id="messageBox" class="message"></div>
+        </section>
+
+        <section class="card-section mt-4">
+            <h2>
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Datos de prueba rápida
+            </h2>
+
+            <p class="text-muted mt-1">
+                Puedes llenar el formulario rápidamente con ejemplos de consumo externo.
+            </p>
+
+            <div class="demo-actions mt-3">
+                <button class="action-btn" type="button" onclick="rellenarDemo('MED-001', 450, 'Red eléctrica', 8)">
+                    Bajo
+                </button>
+
+                <button class="action-btn" type="button" onclick="rellenarDemo('MED-002', 900, 'Solar', 12)">
+                    Medio
+                </button>
+
+                <button class="action-btn" type="button" onclick="rellenarDemo('MED-003', 1600, 'Mixta', 18)">
+                    Alto
+                </button>
+            </div>
+        </section>
+
+        <section class="card-section mt-4 consumos-section">
+            <div class="flex-between consumos-header">
+                <div>
+                    <h2>
+                        <i class="fas fa-table"></i>
+                        Consumos externos registrados
+                    </h2>
+                    <p class="text-muted mt-1">
+                        Administra, modifica, restaura o elimina únicamente lecturas energéticas externas.
+                    </p>
+                </div>
+
+                <strong id="totalRegistros" class="date-badge">
+                    0 registros
+                </strong>
+            </div>
+
+            <div class="tabla-scroll-outer mt-3">
+                <div class="tabla-scroll-wrapper">
+                    <table class="consumos-table">
+                        <thead>
+                        <tr>
+                            <th>Dispositivo</th>
+                            <th>Consumo</th>
+                            <th>Nivel</th>
+                            <th>Fuente</th>
+                            <th>Fecha y hora</th>
+                            <th>Acciones</th>
+                        </tr>
+                        </thead>
+
+                        <tbody id="tablaConsumos">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                Cargando consumos externos...
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="pagination-container">
+                <div class="pagination-info" id="paginationInfo">
+                    Mostrando 0 de 0 registros
+                </div>
+
+                <div class="pagination-actions">
+                    <button class="pagination-btn" type="button" id="prevPageBtn">
+                        <i class="fas fa-chevron-left"></i>
+                        Anterior
+                    </button>
+
+                    <span class="pagination-page" id="paginationPage">
+                        Página 1 de 1
+                    </span>
+
+                    <button class="pagination-btn" type="button" id="nextPageBtn">
+                        Siguiente
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let consumosActuales = [];
+    let paginaActual = 1;
+    const registrosPorPagina = 10;
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+
+                const currentPage = window.location.pathname
+                    .split('/')
+                    .pop()
+                    .replace('.html', '');
+
+                const activeLink = document.querySelector(
+                    `#sidebar-container a[data-page="${currentPage}"]`
+                );
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', () => {
+                        button.closest('.menu-dropdown').classList.toggle('open');
+                    });
+                });
+
+                const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+                if (logoutBtnGlobal) {
+                    logoutBtnGlobal.addEventListener('click', cerrarSesion);
+                }
+            })
+            .catch(error => console.error('Error cargando menú:', error));
+    }
+
+    function updateDate() {
+        const now = new Date();
+
+        const options = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        };
+
+        let formatted = now.toLocaleDateString('es-ES', options);
+        formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted}`;
+    }
+
+    function setFechaHoraActual() {
+        const ahora = new Date();
+        ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+        document.getElementById('marcaTiempo').value = ahora.toISOString().slice(0, 16);
+    }
+
+    function rellenarDemo(idDispositivo, consumo, fuenteEnergia, hora) {
+        const fecha = new Date();
+        fecha.setHours(hora, 0, 0, 0);
+        fecha.setMinutes(fecha.getMinutes() - fecha.getTimezoneOffset());
+
+        document.getElementById('consumoId').value = '';
+        document.getElementById('idDispositivo').value = idDispositivo;
+        document.getElementById('consumo').value = consumo;
+        document.getElementById('fuenteEnergia').value = fuenteEnergia;
+        document.getElementById('marcaTiempo').value = fecha.toISOString().slice(0, 16);
+
+        resetModoEdicion();
+        mostrarMensaje('', '');
+    }
+
+    function mostrarMensaje(texto, tipo) {
+        const box = document.getElementById('messageBox');
+
+        if (!texto) {
+            box.className = 'message';
+            box.innerText = '';
+            return;
+        }
+
+        box.className = `message ${tipo}`;
+        box.innerText = texto;
+    }
+
+    function obtenerNivelConsumo(consumo) {
+        if (consumo >= 1500) {
+            return {
+                texto: 'Alto',
+                clase: 'nivel-alto'
+            };
+        }
+
+        if (consumo >= 700) {
+            return {
+                texto: 'Medio',
+                clase: 'nivel-medio'
+            };
+        }
+
+        return {
+            texto: 'Bajo',
+            clase: 'nivel-bajo'
+        };
+    }
+
+    function formatearFecha(fecha) {
+        if (!fecha) {
+            return 'Sin fecha';
+        }
+
+        try {
+            return new Date(fecha).toLocaleString('es-CO', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return fecha;
+        }
+    }
+
+    function normalizarFechaParaInput(fecha) {
+        if (!fecha) {
+            return '';
+        }
+
+        const date = new Date(fecha);
+
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        return date.toISOString().slice(0, 16);
+    }
+
+    function limpiarTexto(valor, defecto = 'No especificado') {
+        if (valor === null || valor === undefined || String(valor).trim() === '') {
+            return defecto;
+        }
+
+        return String(valor).trim();
+    }
+
+    function obtenerConsumosOrdenados() {
+        return consumosActuales
+            .slice()
+            .sort((a, b) => new Date(b.marcaTiempo || 0) - new Date(a.marcaTiempo || 0));
+    }
+
+    function obtenerTotalPaginas() {
+        return Math.max(1, Math.ceil(consumosActuales.length / registrosPorPagina));
+    }
+
+    function actualizarPaginacion() {
+        const totalRegistros = consumosActuales.length;
+        const totalPaginas = obtenerTotalPaginas();
+
+        if (paginaActual > totalPaginas) {
+            paginaActual = totalPaginas;
+        }
+
+        const inicio = totalRegistros === 0
+            ? 0
+            : ((paginaActual - 1) * registrosPorPagina) + 1;
+
+        const fin = Math.min(paginaActual * registrosPorPagina, totalRegistros);
+
+        document.getElementById('paginationInfo').innerText =
+            `Mostrando ${inicio} - ${fin} de ${totalRegistros} registros`;
+
+        document.getElementById('paginationPage').innerText =
+            `Página ${paginaActual} de ${totalPaginas}`;
+
+        document.getElementById('prevPageBtn').disabled = paginaActual <= 1;
+        document.getElementById('nextPageBtn').disabled = paginaActual >= totalPaginas || totalRegistros === 0;
+    }
+
+    function renderizarTablaConsumos() {
+        const tabla = document.getElementById('tablaConsumos');
+        const ordenados = obtenerConsumosOrdenados();
+
+        document.getElementById('totalRegistros').innerText =
+            `${consumosActuales.length} registros`;
+
+        if (!ordenados.length) {
+            tabla.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-empty">
+                        No hay consumos externos registrados todavía.
+                    </td>
+                </tr>
+            `;
+
+            actualizarPaginacion();
+            return;
+        }
+
+        const inicio = (paginaActual - 1) * registrosPorPagina;
+        const fin = inicio + registrosPorPagina;
+        const pagina = ordenados.slice(inicio, fin);
+
+        tabla.innerHTML = '';
+
+        pagina.forEach(item => {
+            const nivel = obtenerNivelConsumo(Number(item.consumo || 0));
+            const tr = document.createElement('tr');
+
+            tr.innerHTML = `
+                <td>
+                    <strong>${limpiarTexto(item.idDispositivo, 'Sin dispositivo')}</strong>
+                </td>
+
+                <td>
+                    ${Number(item.consumo || 0).toLocaleString('es-CO')} kWh
+                </td>
+
+                <td>
+                    <span class="nivel-badge ${nivel.clase}">
+                        ${nivel.texto}
+                    </span>
+                </td>
+
+                <td>
+                    ${limpiarTexto(item.fuenteEnergia, 'No especificada')}
+                </td>
+
+                <td class="muted-cell">
+                    ${formatearFecha(item.marcaTiempo)}
+                </td>
+
+                <td>
+                    <div class="table-actions">
+                        <button class="table-action-btn edit" type="button" onclick="editarConsumo('${item.id}')" title="Editar">
+                            <i class="fas fa-pen"></i>
+                        </button>
+
+                        <button class="table-action-btn restore" type="button" onclick="restaurarConsumo('${item.id}')" title="Restaurar último cambio">
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+
+                        <button class="table-action-btn delete" type="button" onclick="eliminarConsumo('${item.id}')" title="Eliminar">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            tabla.appendChild(tr);
+        });
+
+        actualizarPaginacion();
+    }
+
+    async function cargarConsumos() {
+        const tabla = document.getElementById('tablaConsumos');
+
+        try {
+            const response = await fetch('/energy/externos');
+
+            if (!response.ok) {
+                throw new Error('No se pudieron cargar los consumos externos');
+            }
+
+            const consumos = await response.json();
+            consumosActuales = consumos || [];
+
+            const totalPaginas = obtenerTotalPaginas();
+
+            if (paginaActual > totalPaginas) {
+                paginaActual = totalPaginas;
+            }
+
+            renderizarTablaConsumos();
+
+        } catch (error) {
+            console.error(error);
+
+            tabla.innerHTML = `
+                <tr>
+                    <td colspan="6" class="table-error">
+                        Error cargando consumos externos. Verifica el endpoint GET /energy/externos.
+                    </td>
+                </tr>
+            `;
+
+            consumosActuales = [];
+            actualizarPaginacion();
+        }
+    }
+
+    function editarConsumo(id) {
+        const consumo = consumosActuales.find(item => item.id === id);
+
+        if (!consumo) {
+            mostrarMensaje('No se encontró el consumo externo seleccionado.', 'error');
+            return;
+        }
+
+        document.getElementById('consumoId').value = consumo.id || '';
+        document.getElementById('idDispositivo').value = consumo.idDispositivo || '';
+        document.getElementById('consumo').value = consumo.consumo || '';
+        document.getElementById('fuenteEnergia').value = consumo.fuenteEnergia || '';
+        document.getElementById('marcaTiempo').value = normalizarFechaParaInput(consumo.marcaTiempo);
+
+        document.getElementById('formTitle').innerHTML =
+            '<i class="fas fa-pen-to-square"></i> Editar lectura energética externa';
+
+        document.getElementById('submitBtn').innerHTML =
+            '<i class="fas fa-save"></i> Actualizar consumo';
+
+        document.getElementById('cancelEditBtn').classList.remove('hidden');
+
+        mostrarMensaje('Editando consumo externo seleccionado. Realiza los cambios y presiona actualizar.', 'success');
+
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    function resetModoEdicion() {
+        document.getElementById('consumoId').value = '';
+
+        document.getElementById('formTitle').innerHTML =
+            '<i class="fas fa-pen-to-square"></i> Nueva lectura energética externa';
+
+        document.getElementById('submitBtn').innerHTML =
+            '<i class="fas fa-save"></i> Guardar consumo';
+
+        document.getElementById('cancelEditBtn').classList.add('hidden');
+    }
+
+    async function restaurarConsumo(id) {
+        if (!id || id === 'undefined') {
+            mostrarMensaje('No se puede restaurar este consumo porque no tiene ID válido.', 'error');
+            return;
+        }
+
+        const confirmar = confirm('¿Deseas restaurar el último estado guardado de este consumo externo?');
+
+        if (!confirmar) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/energy/externos/${id}/restaurar`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo restaurar el consumo externo');
+            }
+
+            mostrarMensaje('Consumo externo restaurado correctamente mediante Memento.', 'success');
+
+            document.getElementById('consumoForm').reset();
+            resetModoEdicion();
+            setFechaHoraActual();
+
+            await cargarConsumos();
+
+        } catch (error) {
+            console.error(error);
+            mostrarMensaje(
+                'No hay un estado anterior para restaurar o el backend rechazó la operación.',
+                'error'
+            );
+        }
+    }
+
+    async function eliminarConsumo(id) {
+        if (!id || id === 'undefined') {
+            mostrarMensaje('No se puede eliminar este consumo porque no tiene ID válido.', 'error');
+            return;
+        }
+
+        const confirmar = confirm('¿Seguro que deseas eliminar este consumo externo? Esta acción no se puede deshacer.');
+
+        if (!confirmar) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/energy/externos/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('No se pudo eliminar el consumo externo');
+            }
+
+            mostrarMensaje('Consumo externo eliminado correctamente.', 'success');
+
+            document.getElementById('consumoForm').reset();
+            resetModoEdicion();
+            setFechaHoraActual();
+
+            await cargarConsumos();
+
+        } catch (error) {
+            console.error(error);
+            mostrarMensaje('Error al eliminar el consumo externo. Verifica el endpoint DELETE /energy/externos/{id}.', 'error');
+        }
+    }
+
+    async function guardarConsumo(event) {
+        event.preventDefault();
+
+        const consumoId = document.getElementById('consumoId').value;
+
+        const payload = {
+            idDispositivo: document.getElementById('idDispositivo').value.trim(),
+            consumo: parseFloat(document.getElementById('consumo').value),
+            fuenteEnergia: document.getElementById('fuenteEnergia').value,
+            marcaTiempo: document.getElementById('marcaTiempo').value
+        };
+
+        if (!payload.idDispositivo || Number.isNaN(payload.consumo) || !payload.fuenteEnergia || !payload.marcaTiempo) {
+            mostrarMensaje('Completa todos los campos obligatorios antes de guardar.', 'error');
+            return;
+        }
+
+        if (payload.consumo <= 0) {
+            mostrarMensaje('El consumo debe ser mayor que cero.', 'error');
+            return;
+        }
+
+        if (payload.consumo > 5000) {
+            const confirmar = confirm('El consumo ingresado es extremadamente alto. ¿Deseas guardarlo de todos modos?');
+
+            if (!confirmar) {
+                return;
+            }
+        }
+
+        const editando = Boolean(consumoId);
+        const url = editando ? `/energy/externos/${consumoId}` : '/energy/externos';
+        const metodo = editando ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: metodo,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(editando ? 'No se pudo actualizar el consumo externo' : 'No se pudo guardar el consumo externo');
+            }
+
+            mostrarMensaje(
+                editando ? 'Consumo externo actualizado correctamente. Puedes restaurar el estado anterior con el botón de restaurar.' : 'Consumo externo registrado correctamente.',
+                'success'
+            );
+
+            document.getElementById('consumoForm').reset();
+            resetModoEdicion();
+            setFechaHoraActual();
+
+            paginaActual = 1;
+            await cargarConsumos();
+
+        } catch (error) {
+            console.error(error);
+
+            mostrarMensaje(
+                editando
+                    ? 'Error al actualizar el consumo externo. Verifica el endpoint PUT /energy/externos/{id}.'
+                    : 'Error al guardar el consumo externo. Verifica el endpoint POST /energy/externos.',
+                'error'
+            );
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+        setFechaHoraActual();
+        cargarConsumos();
+
+        document.getElementById('consumoForm').addEventListener('submit', guardarConsumo);
+
+        document.getElementById('cancelEditBtn').addEventListener('click', () => {
+            document.getElementById('consumoForm').reset();
+            resetModoEdicion();
+            setFechaHoraActual();
+            mostrarMensaje('', '');
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            cargarConsumos();
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        document.getElementById('prevPageBtn').addEventListener('click', () => {
+            if (paginaActual > 1) {
+                paginaActual--;
+                renderizarTablaConsumos();
+            }
+        });
+
+        document.getElementById('nextPageBtn').addEventListener('click', () => {
+            const totalPaginas = obtenerTotalPaginas();
+
+            if (paginaActual < totalPaginas) {
+                paginaActual++;
+                renderizarTablaConsumos();
+            }
+        });
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

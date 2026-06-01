@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Facturas por Estado</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportes.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Facturas por Estado</h1>
+                <p>
+                    <i class="fas fa-file-circle-check"></i>
+                    Análisis de facturas usando Template Method y Chain of Responsibility
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualizar
+                </button>
+
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Salir
+                </button>
+            </div>
+        </div>
+
+        <section class="kpi-section">
+            <div class="flex-between" style="gap:16px; flex-wrap:wrap;">
+                <div>
+                    <h2>
+                        <i class="fas fa-chart-pie"></i>
+                        Indicadores por estado
+                    </h2>
+                    <p id="resumenPeriodo" class="text-muted mt-1">
+                        Cargando reporte avanzado...
+                    </p>
+                </div>
+
+                <select id="periodoSelector" class="action-btn">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid mt-3">
+                <div class="kpi-card">
+                    <span>Total facturas</span>
+                    <strong id="kpiTotalFacturas">0</strong>
+                    <small>Facturas analizadas</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total facturado</span>
+                    <strong id="kpiTotalFacturado">$0</strong>
+                    <small>Valor acumulado</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Estado dominante</span>
+                    <strong id="kpiEstadoDominante">Sin datos</strong>
+                    <small>Mayor peso económico</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total pendiente</span>
+                    <strong id="kpiTotalPendiente">$0</strong>
+                    <small>Facturas por cobrar</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total vencido</span>
+                    <strong id="kpiTotalVencido">$0</strong>
+                    <small>Requiere seguimiento</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total pagado</span>
+                    <strong id="kpiTotalPagado">$0</strong>
+                    <small>Recaudo registrado</small>
+                </div>
+            </div>
+        </section>
+
+        <div class="charts-grid">
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-chart-column"></i>
+                    Valor facturado por estado
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="totalEstadoChart" height="130"></canvas>
+                </div>
+            </section>
+
+            <section class="chart-section">
+                <h2>
+                    <i class="fas fa-chart-pie"></i>
+                    Distribución de facturas
+                </h2>
+                <div class="chart-wrapper">
+                    <canvas id="cantidadEstadoChart" height="190"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <section class="chart-section">
+            <h2>
+                <i class="fas fa-table"></i>
+                Detalle por estado
+            </h2>
+
+            <div class="chart-wrapper" style="overflow-x:auto;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                    <tr style="text-align:left; border-bottom:1px solid #e2e8f0;">
+                        <th style="padding:12px;">Estado</th>
+                        <th style="padding:12px;">Cantidad</th>
+                        <th style="padding:12px;">Total facturado</th>
+                        <th style="padding:12px;">% facturas</th>
+                        <th style="padding:12px;">% ingresos</th>
+                    </tr>
+                    </thead>
+
+                    <tbody id="tablaEstados">
+                    <tr>
+                        <td colspan="5" style="padding:16px; color:#64748b;">
+                            Cargando información...
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="recommendation-section">
+            <h3>
+                <i class="fas fa-lightbulb"></i>
+                Recomendaciones del reporte
+            </h3>
+
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i>
+            Reporte generado desde API REST:
+            /api/reportes-avanzados/facturas-estado
+        </div>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let totalEstadoChart = null;
+    let cantidadEstadoChart = null;
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+
+                const currentPage = window.location.pathname
+                    .split('/')
+                    .pop()
+                    .replace('.html', '');
+
+                const activeLink = document.querySelector(
+                    `#sidebar-container a[data-page="${currentPage}"]`
+                );
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', () => {
+                        button.closest('.menu-dropdown').classList.toggle('open');
+                    });
+                });
+
+                const activeReportLink = document.querySelector(
+                    `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+                );
+
+                if (activeReportLink) {
+                    activeReportLink.classList.add('active');
+                    activeReportLink.closest('.menu-dropdown').classList.add('open');
+                }
+
+                const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+                if (logoutBtnGlobal) {
+                    logoutBtnGlobal.addEventListener('click', cerrarSesion);
+                }
+            })
+            .catch(error => console.error('Error cargando menú:', error));
+    }
+
+    function updateDate() {
+        const now = new Date();
+
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted.charAt(0).toUpperCase() + formatted.slice(1)}`;
+    }
+
+    function formatearMoneda(valor) {
+        return `$${Number(valor || 0).toLocaleString('es-CO')}`;
+    }
+
+    function formatearNumero(valor) {
+        return Number(valor || 0).toLocaleString('es-CO');
+    }
+
+    function formatearPorcentaje(valor) {
+        return `${Number(valor || 0).toFixed(2)}%`;
+    }
+
+    function obtenerRolApi() {
+        return rol === 'admin' ? 'ADMIN' : 'USER';
+    }
+
+    async function cargarReporte(periodo) {
+        try {
+            const rolUsuario = obtenerRolApi();
+
+            const response = await fetch(
+                `/api/reportes-avanzados/facturas-estado?periodo=${periodo}&rolUsuario=${rolUsuario}`
+            );
+
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el reporte de facturas por estado');
+            }
+
+            const data = await response.json();
+
+            actualizarKPIs(data, periodo);
+            actualizarGraficoTotalEstado(data.estados || []);
+            actualizarGraficoCantidadEstado(data.estados || []);
+            actualizarTablaEstados(data.estados || []);
+            actualizarRecomendaciones(data.recomendaciones || []);
+
+        } catch (error) {
+            console.error(error);
+
+            document.getElementById('tablaEstados').innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding:16px;">
+                        <div class="empty-state">
+                            Error cargando el reporte. Verifica el endpoint
+                            /api/reportes-avanzados/facturas-estado.
+                        </div>
+                    </td>
+                </tr>
+            `;
+
+            document.getElementById('recomendaciones').innerHTML = `
+                <div class="empty-state">
+                    No fue posible obtener recomendaciones del reporte.
+                </div>
+            `;
+        }
+    }
+
+    function actualizarKPIs(data, periodo) {
+        const totalPorEstado = data.totalPorEstado || {};
+
+        document.getElementById('kpiTotalFacturas').innerText =
+            formatearNumero(data.totalFacturas);
+
+        document.getElementById('kpiTotalFacturado').innerText =
+            formatearMoneda(data.totalFacturado);
+
+        document.getElementById('kpiEstadoDominante').innerText =
+            data.estadoDominante || 'Sin datos';
+
+        document.getElementById('kpiTotalPendiente').innerText =
+            formatearMoneda(totalPorEstado.PENDIENTE);
+
+        document.getElementById('kpiTotalVencido').innerText =
+            formatearMoneda(totalPorEstado.VENCIDA);
+
+        document.getElementById('kpiTotalPagado').innerText =
+            formatearMoneda(totalPorEstado.PAGADA);
+
+        document.getElementById('resumenPeriodo').innerText =
+            `Periodo analizado: ${periodo}. Reporte validado mediante Chain of Responsibility.`;
+    }
+
+    function actualizarGraficoTotalEstado(estados) {
+        const ctx = document.getElementById('totalEstadoChart').getContext('2d');
+
+        const labels = estados.map(item => item.estado);
+        const valores = estados.map(item => item.totalFacturado);
+
+        if (totalEstadoChart) {
+            totalEstadoChart.destroy();
+        }
+
+        totalEstadoChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Total facturado',
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${formatearMoneda(ctx.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoCantidadEstado(estados) {
+        const ctx = document.getElementById('cantidadEstadoChart').getContext('2d');
+
+        const labels = estados.map(item => item.estado);
+        const valores = estados.map(item => item.cantidadFacturas);
+
+        if (cantidadEstadoChart) {
+            cantidadEstadoChart.destroy();
+        }
+
+        cantidadEstadoChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.label}: ${formatearNumero(ctx.raw)} facturas`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarTablaEstados(estados) {
+        const tbody = document.getElementById('tablaEstados');
+        tbody.innerHTML = '';
+
+        if (!estados.length) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding:16px;">
+                        <div class="empty-state">
+                            No hay facturas disponibles para el periodo seleccionado.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        estados.forEach(item => {
+            const row = document.createElement('tr');
+            row.style.borderBottom = '1px solid #e2e8f0';
+
+            row.innerHTML = `
+                <td style="padding:12px;">
+                    <strong>${item.estado}</strong>
+                </td>
+                <td style="padding:12px;">
+                    ${formatearNumero(item.cantidadFacturas)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearMoneda(item.totalFacturado)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearPorcentaje(item.porcentajeFacturas)}
+                </td>
+                <td style="padding:12px;">
+                    ${formatearPorcentaje(item.porcentajeIngresos)}
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    }
+
+    function actualizarRecomendaciones(recomendaciones) {
+        const contenedor = document.getElementById('recomendaciones');
+        contenedor.innerHTML = '';
+
+        if (!recomendaciones.length) {
+            recomendaciones = ['No hay recomendaciones disponibles para este periodo.'];
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${texto}</span>
+            `;
+            contenedor.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+        cargarReporte('semana');
+
+        document.getElementById('periodoSelector').addEventListener('change', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

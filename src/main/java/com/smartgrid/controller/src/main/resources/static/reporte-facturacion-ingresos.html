@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Facturación e Ingresos</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/sidebar.css">
+    <link rel="stylesheet" href="/css/reportes.css">
+    <link rel="stylesheet" href="/css/cards.css">
+    <link rel="stylesheet" href="/css/utilities.css">
+</head>
+
+<body>
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Facturación e Ingresos</h1>
+                <p><i class="fas fa-money-bill-trend-up"></i> Análisis financiero de facturas energéticas</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <section class="kpi-section">
+            <div class="flex-between" style="gap:16px; flex-wrap:wrap;">
+                <div>
+                    <h2><i class="fas fa-chart-line"></i> Indicadores financieros</h2>
+                    <p id="resumenPeriodo" class="text-muted mt-1">Cargando análisis financiero...</p>
+                </div>
+
+                <select id="periodoSelector" class="action-btn">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid mt-3">
+                <div class="kpi-card">
+                    <span>Ingreso total</span>
+                    <strong id="kpiIngresoTotal">$0</strong>
+                    <small>Ingresos acumulados</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Total facturas</span>
+                    <strong id="kpiTotalFacturas">0</strong>
+                    <small>Documentos emitidos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Promedio factura</span>
+                    <strong id="kpiPromedio">$0</strong>
+                    <small>Valor medio facturado</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Impuestos</span>
+                    <strong id="kpiImpuestos">$0</strong>
+                    <small>Total recaudado por impuestos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Descuentos</span>
+                    <strong id="kpiDescuentos">$0</strong>
+                    <small>Beneficios aplicados</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Usuario principal</span>
+                    <strong id="kpiUsuarioMayor">Sin datos</strong>
+                    <small id="kpiUsuarioValor">$0</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Fuente más rentable</span>
+                    <strong id="kpiFuenteMayor">Sin datos</strong>
+                    <small id="kpiFuenteValor">$0</small>
+                </div>
+            </div>
+        </section>
+
+        <div class="charts-grid">
+            <section class="chart-section">
+                <h2><i class="fas fa-users"></i> Ingresos por usuario</h2>
+                <div class="chart-wrapper">
+                    <canvas id="usuariosChart" height="120"></canvas>
+                </div>
+            </section>
+
+            <section class="chart-section">
+                <h2><i class="fas fa-bolt"></i> Ingresos por fuente</h2>
+                <div class="chart-wrapper">
+                    <canvas id="fuentesChart" height="180"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <section class="chart-section">
+            <h2><i class="fas fa-file-invoice-dollar"></i> Ingresos por tipo de facturación</h2>
+            <div class="chart-wrapper">
+                <canvas id="tiposChart" height="110"></canvas>
+            </div>
+        </section>
+
+        <section class="recommendation-section">
+            <h3><i class="fas fa-lightbulb"></i> Recomendaciones financieras</h3>
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i> Reporte generado desde API REST: /api/reportes/facturacion-ingresos
+        </div>
+    </main>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    let usuariosChart = null;
+    let fuentesChart = null;
+    let tiposChart = null;
+
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+
+    function cargarMenu() {
+        fetch('/menu.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('sidebar-container').innerHTML = data;
+
+                const currentPage = window.location.pathname
+                    .split('/')
+                    .pop()
+                    .replace('.html', '');
+
+                const activeLink = document.querySelector(
+                    `#sidebar-container a[data-page="${currentPage}"]`
+                );
+
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+
+                document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+                    button.addEventListener('click', () => {
+                        button.closest('.menu-dropdown').classList.toggle('open');
+                    });
+                });
+
+                const activeReportLink = document.querySelector(
+                    `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+                );
+
+                if (activeReportLink) {
+                    activeReportLink.classList.add('active');
+                    activeReportLink.closest('.menu-dropdown').classList.add('open');
+                }
+
+                const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+                if (logoutBtnGlobal) {
+                    logoutBtnGlobal.addEventListener('click', cerrarSesion);
+                }
+            })
+            .catch(error => console.error('Error cargando menú:', error));
+    }
+
+    function updateDate() {
+        const now = new Date();
+
+        const formatted = now.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted.charAt(0).toUpperCase() + formatted.slice(1)}`;
+    }
+
+    function formatearMoneda(valor) {
+        return `$${Number(valor || 0).toLocaleString('es-CO')}`;
+    }
+
+    async function cargarReporte(periodo) {
+        try {
+            const response = await fetch(`/api/reportes/facturacion-ingresos?periodo=${periodo}`);
+
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el reporte de facturación e ingresos');
+            }
+
+            const data = await response.json();
+
+            actualizarKPIs(data, periodo);
+            actualizarGraficoUsuarios(data.ingresosPorUsuario || {});
+            actualizarGraficoFuentes(data.ingresosPorFuente || {});
+            actualizarGraficoTipos(data.ingresosPorTipoFacturacion || {});
+            actualizarRecomendaciones(data.recomendaciones || []);
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('recomendaciones').innerHTML =
+                `<div class="empty-state">Error cargando el reporte. Verifica el endpoint /api/reportes/facturacion-ingresos.</div>`;
+        }
+    }
+
+    function actualizarKPIs(data, periodo) {
+        document.getElementById('kpiIngresoTotal').innerText = formatearMoneda(data.ingresoTotal);
+        document.getElementById('kpiTotalFacturas').innerText = Number(data.totalFacturas || 0).toLocaleString('es-CO');
+        document.getElementById('kpiPromedio').innerText = formatearMoneda(data.promedioFactura);
+        document.getElementById('kpiImpuestos').innerText = formatearMoneda(data.impuestosTotal);
+        document.getElementById('kpiDescuentos').innerText = formatearMoneda(data.descuentosTotal);
+
+        document.getElementById('kpiUsuarioMayor').innerText = data.usuarioMayorFacturacion || 'Sin datos';
+        document.getElementById('kpiUsuarioValor').innerText = formatearMoneda(data.mayorFacturacionUsuario);
+
+        document.getElementById('kpiFuenteMayor').innerText = data.fuenteMasRentable || 'Sin datos';
+        document.getElementById('kpiFuenteValor').innerText = formatearMoneda(data.ingresoFuenteMasRentable);
+
+        document.getElementById('resumenPeriodo').innerText =
+            `Periodo analizado: ${periodo}`;
+    }
+
+    function actualizarGraficoUsuarios(ingresosPorUsuario) {
+        const ctx = document.getElementById('usuariosChart').getContext('2d');
+
+        const entradas = Object.entries(ingresosPorUsuario)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+
+        const labels = entradas.map(item => item[0]);
+        const valores = entradas.map(item => item[1]);
+
+        if (usuariosChart) {
+            usuariosChart.destroy();
+        }
+
+        usuariosChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Ingresos por usuario',
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${formatearMoneda(ctx.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoFuentes(ingresosPorFuente) {
+        const ctx = document.getElementById('fuentesChart').getContext('2d');
+
+        const labels = Object.keys(ingresosPorFuente);
+        const valores = Object.values(ingresosPorFuente);
+
+        if (fuentesChart) {
+            fuentesChart.destroy();
+        }
+
+        fuentesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: valores
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.label}: ${formatearMoneda(ctx.raw)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarGraficoTipos(ingresosPorTipoFacturacion) {
+        const ctx = document.getElementById('tiposChart').getContext('2d');
+
+        const labels = Object.keys(ingresosPorTipoFacturacion);
+        const valores = Object.values(ingresosPorTipoFacturacion);
+
+        if (tiposChart) {
+            tiposChart.destroy();
+        }
+
+        tiposChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Ingresos por tipo de facturación',
+                    data: valores
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${formatearMoneda(ctx.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarRecomendaciones(recomendaciones) {
+        const contenedor = document.getElementById('recomendaciones');
+        contenedor.innerHTML = '';
+
+        if (!recomendaciones.length) {
+            recomendaciones = ['No hay recomendaciones disponibles para este periodo.'];
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `<i class="fas fa-check-circle"></i><span>${texto}</span>`;
+            contenedor.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cargarMenu();
+        updateDate();
+        cargarReporte('semana');
+
+        document.getElementById('periodoSelector').addEventListener('change', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>

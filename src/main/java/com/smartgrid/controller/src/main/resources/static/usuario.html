@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Smart Grid | Mi Panel de Energía</title>
+    <!-- Google Fonts + Font Awesome 6 (free icons) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+
+        /* ========= SIDEBAR MODERNA (verde energía) ========= */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: linear-gradient(180deg, #064e3b 0%, #0a5c44 100%);
+            backdrop-filter: blur(0px);
+            color: #e2f0ea;
+            box-shadow: 6px 0 18px rgba(0, 0, 0, 0.08);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 32px 24px 20px 24px;
+            border-bottom: 1px solid rgba(110, 231, 183, 0.2);
+            margin-bottom: 24px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #a7f3d0;
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-header h2 i {
+            font-size: 1.8rem;
+            color: #6ee7b7;
+        }
+
+        .nav-links {
+            flex: 1;
+            padding: 0 18px;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 18px;
+            margin: 6px 0;
+            border-radius: 16px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: #ccf0e5;
+            text-decoration: none;
+            transition: 0.2s ease;
+        }
+
+        .nav-links a i {
+            width: 24px;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .nav-links a:hover {
+            background: rgba(110, 231, 183, 0.18);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-links a.active {
+            background: #0f766e;
+            color: white;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            border-left: 3px solid #6ee7b7;
+        }
+
+        .sidebar-footer {
+            padding: 24px 24px 32px;
+            font-size: 0.7rem;
+            color: #9ecfbb;
+            border-top: 1px solid rgba(110, 231, 183, 0.15);
+            margin-top: 20px;
+        }
+
+        /* ========= MAIN CONTENT ========= */
+        .main-content {
+            margin-left: 280px;
+            padding: 32px 40px;
+            transition: all 0.3s;
+        }
+
+        /* Header superior */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 36px;
+        }
+
+        .welcome-section h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.4px;
+        }
+
+        .welcome-section p {
+            color: #475569;
+            margin-top: 6px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-badge {
+            background: white;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid #e2e8f0;
+        }
+
+        .refresh-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: 'Inter', sans-serif;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #1e293b;
+        }
+
+        .refresh-btn:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            transform: scale(0.97);
+        }
+
+        /* Cards de métricas (estilo profesional) */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-bottom: 42px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 28px;
+            padding: 1.4rem 1.6rem;
+            transition: all 0.25s ease;
+            border: 1px solid #eef2ff;
+            box-shadow: 0 10px 20px -8px rgba(0, 0, 0, 0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+
+        .metric-info h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-weight: 700;
+            color: #5b6e8c;
+            margin-bottom: 12px;
+        }
+
+        .metric-number {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .metric-tag {
+            font-size: 0.75rem;
+            background: #e6f7ec;
+            color: #15803d;
+            padding: 4px 12px;
+            border-radius: 60px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .metric-icon {
+            background: #ecfdf5;
+            width: 54px;
+            height: 54px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: #0d9488;
+        }
+
+        /* Sección Facturas */
+        .invoices-section {
+            margin-top: 0.5rem;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .section-title h2 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .badge-count {
+            background: #e2e8f0;
+            padding: 5px 14px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* Tarjetas de facturas premium */
+        .invoices-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .invoice-card {
+            background: white;
+            border-radius: 24px;
+            transition: all 0.2s;
+            border: 1px solid #eef2ff;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+        }
+
+        .invoice-header {
+            background: #fafcff;
+            padding: 1.2rem 1.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .invoice-user {
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .invoice-user i {
+            color: #0d9488;
+            font-size: 1.2rem;
+        }
+
+        .invoice-total {
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: #065f46;
+            background: #ecfdf5;
+            padding: 4px 16px;
+            border-radius: 60px;
+        }
+
+        .invoice-details {
+            padding: 1.2rem 1.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            background: white;
+        }
+
+        .detail-item {
+            flex: 1;
+            min-width: 130px;
+        }
+
+        .detail-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #6c7a91;
+            letter-spacing: 0.3px;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 6px;
+            color: #0f172a;
+        }
+
+        .energy-badge {
+            background: #eef2ff;
+            border-radius: 30px;
+            padding: 5px 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* estado vacío */
+        .empty-state {
+            background: white;
+            border-radius: 2rem;
+            text-align: center;
+            padding: 3rem;
+            color: #5b6e8c;
+            border: 1px dashed #cbd5e1;
+        }
+
+        /* loaders/skeleton */
+        .skeleton-metric {
+            background: #e2e8f0;
+            border-radius: 28px;
+            height: 110px;
+            animation: pulse 1.2s infinite;
+        }
+
+        .skeleton-invoice {
+            background: #e2e8f0;
+            border-radius: 24px;
+            height: 140px;
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                width: 260px;
+            }
+            .main-content {
+                margin-left: 260px;
+                padding: 24px;
+            }
+            .metric-number {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 12px 20px;
+            }
+            .sidebar-header, .sidebar-footer {
+                display: none;
+            }
+            .nav-links {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                padding: 8px 0;
+            }
+            .nav-links a {
+                padding: 8px 18px;
+                font-size: 0.85rem;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            .stats-grid {
+                gap: 16px;
+            }
+        }
+
+        .error-state {
+            background: #fff5f0;
+            border-left: 5px solid #e07c1c;
+            padding: 20px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+	<script>
+		const token = localStorage.getItem('authToken');
+		const rol = localStorage.getItem('userRol');
+		if (!token || rol !== 'admin') {   // para usuario.html: rol !== 'usuario'
+		    alert('Acceso no autorizado');
+    	window.location.href = 'index.html';}
+	</script>
+	
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h2><i class="fas fa-leaf"></i> Smart<span style="color:#a7f3d0;">Grid</span></h2>
+        <div style="font-size: 0.7rem; margin-top: 10px; color:#b2e6d4;">Portal de usuario</div>
+    </div>
+    <div class="nav-links">
+        <a href="#" class="active"><i class="fas fa-home"></i> Inicio</a>
+        <a href="#"><i class="fas fa-file-invoice"></i> Mis Facturas</a>
+        <a href="#"><i class="fas fa-chart-line"></i> Consumos</a>
+        <a href="admin.html"><i class="fas fa-user-shield"></i> Vista Admin</a>
+        <a href="#"><i class="fas fa-cog"></i> Preferencias</a>
+    </div>
+    <div class="sidebar-footer">
+        <i class="fas fa-solar-panel"></i> Energía renovable<br>
+        Red inteligente · Conectividad optimizada
+    </div>
+</aside>
+
+<main class="main-content">
+    <div class="top-header">
+        <div class="welcome-section">
+            <h1>Mi Panel Energético</h1>
+            <p><i class="fas fa-bolt" style="color:#0d9488;"></i> Resumen de facturación y consumo eficiente</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="date-badge" id="currentDate"><i class="far fa-calendar-alt"></i> Cargando...</div>
+            <button class="refresh-btn" id="refreshInvoicesBtn"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+        <div class="header-actions">
+		    <div class="date-badge" id="currentDate"></div>
+			    <button class="refresh-btn" id="refreshDashboardBtn"><i class="fas fa-sync-alt"></i> Actualizar</button>
+			    <button class="refresh-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c; border-color:#fecaca;">
+			        <i class="fas fa-sign-out-alt"></i> Salir</button>
+		</div>
+        
+    </div>
+
+    <!-- KPIs de resumen -->
+    <div id="statsContainer" class="stats-grid">
+        <!-- Skeletons -->
+        <div class="skeleton-metric"></div>
+        <div class="skeleton-metric"></div>
+        <div class="skeleton-metric"></div>
+    </div>
+
+    <!-- Listado de facturas -->
+    <div class="invoices-section">
+        <div class="section-title">
+            <h2><i class="fas fa-receipt"></i> Historial de facturas</h2>
+            <span class="badge-count" id="invoiceCountBadge">0 facturas</span>
+        </div>
+        <div id="invoicesListContainer" class="invoices-container">
+            <div class="skeleton-invoice"></div>
+            <div class="skeleton-invoice"></div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // Variables globales de caché ligera, métricas e info
+    let lastFetchData = null;
+    
+    // Helper: formato moneda CLP/COP genérico (estilo profesional)
+    function formatMoney(value) {
+        if (value === undefined || value === null) return '$0';
+        let num = Number(value);
+        if (isNaN(num)) return '$0';
+        return '$' + num.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function formatNumber(num) {
+        if (num === undefined || num === null) return '0';
+        return Number(num).toLocaleString('es-CO');
+    }
+
+    // Actualizar fecha actual
+    function updateDate() {
+        const now = new Date();
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        let dateStr = now.toLocaleDateString('es-ES', options);
+        dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+        const dateElement = document.getElementById('currentDate');
+        if (dateElement) dateElement.innerHTML = `<i class="far fa-calendar-alt"></i> ${dateStr}`;
+    }
+
+    // Renderizar KPIs y facturas
+    function renderUserDashboard(invoices) {
+        if (!invoices || !Array.isArray(invoices)) {
+            invoices = [];
+        }
+        const totalFacturas = invoices.length;
+        let ultimoTotal = 0;
+        let ultimaFuente = '—';
+        
+        if (totalFacturas > 0) {
+            const ultimaFactura = invoices[invoices.length - 1];
+            ultimoTotal = ultimaFactura.total !== undefined ? Number(ultimaFactura.total) : 0;
+            ultimaFuente = ultimaFactura.fuenteEnergia || 'No especificada';
+        }
+        
+        // Calcular consumo total a partir de facturas (si tienen campo consumo)
+        let totalConsumoKwh = 0;
+        invoices.forEach(f => {
+            if (f.consumo && !isNaN(Number(f.consumo))) totalConsumoKwh += Number(f.consumo);
+        });
+        
+        // Renderizar 3 cards métricas avanzadas
+        const statsHtml = `
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3><i class="fas fa-file-invoice"></i> Total facturas</h3>
+                    <div class="metric-number">${formatNumber(totalFacturas)}</div>
+                    <span class="metric-tag"><i class="fas-regular fa-calendar-check"></i> registros</span>
+                </div>
+                <div class="metric-icon"><i class="fas fa-receipt"></i></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3><i class="fas fa-charging-station"></i> Último total</h3>
+                    <div class="metric-number">${formatMoney(ultimoTotal)}</div>
+                    <span class="metric-tag">última factura emitida</span>
+                </div>
+                <div class="metric-icon"><i class="fas fa-dollar-sign"></i></div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-info">
+                    <h3><i class="fas fa-solar-panel"></i> Fuente energía</h3>
+                    <div class="metric-number" style="font-size:1.6rem;">${ultimaFuente.substring(0,18)}</div>
+                    <span class="metric-tag">mix renovable</span>
+                </div>
+                <div class="metric-icon"><i class="fas fa-leaf"></i></div>
+            </div>
+        `;
+        
+        const statsContainer = document.getElementById('statsContainer');
+        if (statsContainer) statsContainer.innerHTML = statsHtml;
+        
+        // Actualizar badge contador facturas
+        const badgeSpan = document.getElementById('invoiceCountBadge');
+        if (badgeSpan) badgeSpan.textContent = `${totalFacturas} factura${totalFacturas !== 1 ? 's' : ''}`;
+        
+        // Render listado de facturas con diseño mejorado
+        let invoicesHtml = '';
+        if (invoices.length === 0) {
+            invoicesHtml = `<div class="empty-state"><i class="fas fa-ban" style="font-size: 2rem; opacity:0.5;"></i><p style="margin-top: 12px;">No hay facturas disponibles en este momento</p><button class="refresh-btn" style="margin-top:10px;" onclick="fetchInvoicesData()">Volver a intentar</button></div>`;
+        } else {
+            invoices.forEach((inv, idx) => {
+                const nombre = inv.nombreUsuario || `Usuario ${idx+1}`;
+                const consumo = inv.consumo !== undefined ? `${formatNumber(inv.consumo)} kWh` : '— kWh';
+                const subtotal = inv.subtotal !== undefined ? formatMoney(inv.subtotal) : formatMoney(0);
+                const impuestos = inv.impuestos !== undefined ? formatMoney(inv.impuestos) : formatMoney(0);
+                const descuento = inv.descuento !== undefined ? formatMoney(inv.descuento) : formatMoney(0);
+                const total = inv.total !== undefined ? formatMoney(inv.total) : formatMoney(0);
+                const fuente = inv.fuenteEnergia || 'Energía mixta';
+                invoicesHtml += `
+                    <div class="invoice-card">
+                        <div class="invoice-header">
+                            <div class="invoice-user">
+                                <i class="fas fa-user-circle"></i> ${escapeHtml(nombre)}
+                            </div>
+                            <div class="invoice-total">${total}</div>
+                        </div>
+                        <div class="invoice-details">
+                            <div class="detail-item">
+                                <div class="detail-label"><i class="fas fa-plug"></i> Consumo</div>
+                                <div class="detail-value">${consumo}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Subtotal</div>
+                                <div class="detail-value">${subtotal}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Impuestos</div>
+                                <div class="detail-value">${impuestos}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Descuento</div>
+                                <div class="detail-value">${descuento}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Fuente</div>
+                                <div class="detail-value"><span class="energy-badge"><i class="fas fa-sun"></i> ${escapeHtml(fuente)}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        const invoicesContainer = document.getElementById('invoicesListContainer');
+        if (invoicesContainer) invoicesContainer.innerHTML = invoicesHtml;
+    }
+    
+    // Función auxiliar para escapar HTML básico
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+    
+    // Mostrar skeletons mientras carga
+    function showLoadingState() {
+        const statsContainer = document.getElementById('statsContainer');
+        if (statsContainer) {
+            statsContainer.innerHTML = `<div class="skeleton-metric"></div><div class="skeleton-metric"></div><div class="skeleton-metric"></div>`;
+        }
+        const invoicesContainer = document.getElementById('invoicesListContainer');
+        if (invoicesContainer) {
+            invoicesContainer.innerHTML = `<div class="skeleton-invoice"></div><div class="skeleton-invoice"></div>`;
+        }
+        const badgeSpan = document.getElementById('invoiceCountBadge');
+        if (badgeSpan) badgeSpan.textContent = 'cargando...';
+    }
+    
+    // Manejo de error visual
+    function showErrorState(errorMsg) {
+        const statsContainer = document.getElementById('statsContainer');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div class="metric-card" style="grid-column: span 3; background:#fff1f0; justify-content:center;">
+                    <div style="text-align:center;">
+                        <i class="fas fa-exclamation-triangle" style="font-size:2rem; color:#c2410c;"></i>
+                        <p style="margin-top:10px; font-weight:500;">${errorMsg}</p>
+                        <button class="refresh-btn" style="margin-top:8px;" onclick="fetchInvoicesData()">Reintentar</button>
+                    </div>
+                </div>
+            `;
+        }
+        const invoicesContainer = document.getElementById('invoicesListContainer');
+        if (invoicesContainer) {
+            invoicesContainer.innerHTML = `<div class="empty-state"><i class="fas fa-server"></i> No se pudo cargar la información.<br> Verifica conexión con el backend.</div>`;
+        }
+        const badgeSpan = document.getElementById('invoiceCountBadge');
+        if (badgeSpan) badgeSpan.textContent = 'error';
+    }
+    
+    // Obtener facturas desde el endpoint
+    async function fetchInvoicesData() {
+        showLoadingState();
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch("http://localhost:8080/facturas", {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            const data = await response.json();
+            // Validamos que data sea array (o al menos iterable)
+            let invoicesArray = Array.isArray(data) ? data : (data?.facturas ? data.facturas : []);
+            if (!Array.isArray(invoicesArray)) invoicesArray = [];
+            lastFetchData = invoicesArray;
+            renderUserDashboard(invoicesArray);
+        } catch (error) {
+            console.error("Fetch error facturas:", error);
+            let friendlyMsg = "No se pudo conectar al servidor. Asegúrate de que el backend esté en http://localhost:8080/facturas";
+            if (error.name === 'AbortError') friendlyMsg = "Tiempo de espera agotado. Verifica que el servicio esté activo.";
+            else if (error.message.includes("Failed to fetch")) friendlyMsg = "No se pudo alcanzar el servidor. ¿Backend lanzado?";
+            else friendlyMsg = `Error: ${error.message}`;
+            showErrorState(friendlyMsg);
+        }
+    }
+    
+    // Auto-refresh cada 40 segundos (actualización silenciosa)
+    let autoRefreshInterval = null;
+    
+    function startAutoRefresh() {
+        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        autoRefreshInterval = setInterval(() => {
+            // Solo si ya tenemos datos previos (evita refetch innecesario en error)
+            if (lastFetchData !== null || document.querySelector('.error-state') === null) {
+                fetchInvoicesData();
+            } else {
+                // También intentamos refrescar en caso de errores para recuperación automática
+                fetchInvoicesData();
+            }
+        }, 40000);
+    }
+    
+    // Inicializar toda la UI
+    document.addEventListener("DOMContentLoaded", () => {
+        updateDate();
+        fetchInvoicesData();
+        startAutoRefresh();
+        // Actualizar fecha cada minuto
+        setInterval(updateDate, 60000);
+        
+        const refreshBtn = document.getElementById("refreshInvoicesBtn");
+        if (refreshBtn) {
+            refreshBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                fetchInvoicesData();
+            });
+        }
+    });
+    
+    //cierre sesion
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userRol');
+    sessionStorage.removeItem('rolSeleccionado'); // opcional
+    window.location.href = 'index.html';
+});
+</script>
+</body>
+</html>

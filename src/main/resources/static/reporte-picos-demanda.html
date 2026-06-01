@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Grid | Picos de Demanda</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+	<link rel="stylesheet" href="/css/layout.css">
+	<link rel="stylesheet" href="/css/sidebar.css">
+	<link rel="stylesheet" href="/css/dashboard.css">
+	<link rel="stylesheet" href="/css/cards.css">
+	<link rel="stylesheet" href="/css/utilities.css">
+   
+</head>
+
+<body>
+<script>
+    const token = localStorage.getItem('authToken');
+    const rol = localStorage.getItem('userRol');
+
+    if (!token || rol !== 'admin') {
+        alert('Acceso no autorizado');
+        window.location.href = 'index.html';
+    }
+
+    fetch('/menu.html')
+    .then(response => response.text())
+    .then(data => {
+        document.getElementById('sidebar-container').innerHTML = data;
+
+        const currentPage = window.location.pathname
+            .split('/')
+            .pop()
+            .replace('.html', '');
+
+        const activeLink = document.querySelector(
+            `#sidebar-container a[data-page="${currentPage}"]`
+        );
+
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+
+        document.querySelectorAll('#sidebar-container .dropdown-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                button.closest('.menu-dropdown').classList.toggle('open');
+            });
+        });
+
+        const activeReportLink = document.querySelector(
+            `#sidebar-container .dropdown-content a[data-page="${currentPage}"]`
+        );
+
+        if (activeReportLink) {
+            activeReportLink.classList.add('active');
+            activeReportLink.closest('.menu-dropdown').classList.add('open');
+        }
+
+        const logoutBtnGlobal = document.getElementById('logoutSidebarBtnGlobal');
+
+        if (logoutBtnGlobal) {
+            logoutBtnGlobal.addEventListener('click', cerrarSesion);
+        }
+    })
+    .catch(error => console.error('Error cargando el menú:', error));
+    function cerrarSesion() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRol');
+        sessionStorage.removeItem('rolSeleccionado');
+        window.location.href = 'index.html';
+    }
+</script>
+
+<div class="app-wrapper">
+    <div id="sidebar-container"></div>
+
+    <main class="main-content">
+        <div class="top-bar">
+            <div class="page-title">
+                <h1>Reporte de Picos de Demanda</h1>
+                <p><i class="fas fa-bolt"></i> Análisis operativo de horas críticas y sobrecarga energética</p>
+            </div>
+
+            <div class="header-actions">
+                <div class="date-badge" id="currentDate"></div>
+
+                <button class="action-btn" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> Actualizar
+                </button>
+
+                <button class="action-btn" id="logoutBtn" style="background:#fee2e2; color:#b91c1c;">
+                    <i class="fas fa-sign-out-alt"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <section class="kpi-section">
+            <div class="kpi-header">
+                <div>
+                    <h2><i class="fas fa-gauge-high"></i> Indicadores de demanda</h2>
+                    <p id="resumenPeriodo">Cargando periodo analizado...</p>
+                </div>
+
+                <select id="periodoSelector" class="period-select">
+                    <option value="dia">Hoy</option>
+                    <option value="semana" selected>Últimos 7 días</option>
+                    <option value="mes">Últimos 30 días</option>
+                    <option value="anio">Últimos 365 días</option>
+                    <option value="todo">Histórico completo</option>
+                </select>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <span>Pico máximo</span>
+                    <strong id="kpiPicoMaximo">0 kWh</strong>
+                    <small id="kpiHoraPico">Sin datos</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Promedio horario</span>
+                    <strong id="kpiPromedio">0 kWh</strong>
+                    <small>Demanda media por hora</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Umbral de pico</span>
+                    <strong id="kpiUmbral">0 kWh</strong>
+                    <small>Promedio x 1.4</small>
+                </div>
+
+                <div class="kpi-card">
+                    <span>Picos detectados</span>
+                    <strong id="kpiCantidadPicos">0</strong>
+                    <small>Horas sobre el umbral</small>
+                </div>
+            </div>
+        </section>
+
+        <section class="chart-section">
+            <h2><i class="fas fa-chart-column"></i> Demanda energética por hora</h2>
+            <div class="chart-wrapper">
+                <canvas id="picosChart" height="110"></canvas>
+            </div>
+        </section>
+
+        <section class="critical-section">
+            <h3><i class="fas fa-triangle-exclamation"></i> Horas críticas detectadas</h3>
+            <div id="horasCriticas" class="critical-list"></div>
+        </section>
+
+        <section class="recommendation-section">
+            <h3><i class="fas fa-lightbulb"></i> Recomendaciones operativas</h3>
+            <div id="recomendaciones" class="recommendation-list"></div>
+        </section>
+
+        <div class="footer-note">
+            <i class="fas fa-database"></i> Reporte generado desde API REST de Smart Grid
+        </div>
+    </main>
+</div>
+
+<script>
+    let picosChart = null;
+
+    function updateDate() {
+        const now = new Date();
+
+        const options = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        };
+
+        let formatted = now.toLocaleDateString('es-ES', options);
+        formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+
+        document.getElementById('currentDate').innerHTML =
+            `<i class="far fa-calendar-alt"></i> ${formatted}`;
+    }
+
+    function formatearKwh(valor) {
+        return `${Number(valor || 0).toLocaleString('es-CO')} kWh`;
+    }
+
+    async function cargarReporte(periodo) {
+        try {
+            const response = await fetch(`/api/consumo/picos-demanda?periodo=${periodo}`);
+
+            if (!response.ok) {
+                throw new Error('No se pudo cargar el reporte de picos de demanda');
+            }
+
+            const data = await response.json();
+
+            actualizarKPIs(data, periodo);
+            actualizarGrafico(data.horas || [], data.consumos || [], data.umbralPico || 0);
+            actualizarHorasCriticas(data.horas || [], data.consumos || [], data.umbralPico || 0);
+            actualizarRecomendaciones(data.recomendaciones || []);
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('resumenPeriodo').innerText =
+                'Error cargando el reporte. Verifica el backend o el endpoint.';
+        }
+    }
+
+    function actualizarKPIs(data, periodo) {
+        document.getElementById('kpiPicoMaximo').innerText = formatearKwh(data.picoMaximo);
+        document.getElementById('kpiHoraPico').innerText = `Hora pico: ${data.horaPico || 'Sin datos'}`;
+        document.getElementById('kpiPromedio').innerText = formatearKwh(data.promedioConsumo);
+        document.getElementById('kpiUmbral').innerText = formatearKwh(data.umbralPico);
+        document.getElementById('kpiCantidadPicos').innerText =
+            Number(data.cantidadPicos || 0).toLocaleString('es-CO');
+
+        document.getElementById('resumenPeriodo').innerText =
+            `Periodo analizado: ${periodo}`;
+    }
+
+    function actualizarGrafico(horas, consumos, umbral) {
+        const ctx = document.getElementById('picosChart').getContext('2d');
+
+        if (picosChart) {
+            picosChart.destroy();
+        }
+
+        const lineaUmbral = horas.map(() => umbral);
+
+        picosChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: horas,
+                datasets: [
+                    {
+                        label: 'Demanda por hora (kWh)',
+                        data: consumos
+                    },
+                    {
+                        label: 'Umbral de pico',
+                        data: lineaUmbral,
+                        type: 'line',
+                        tension: 0.2,
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) =>
+                                `${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('es-CO')} kWh`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    function actualizarHorasCriticas(horas, consumos, umbral) {
+        const contenedor = document.getElementById('horasCriticas');
+        contenedor.innerHTML = '';
+
+        let encontradas = 0;
+
+        horas.forEach((hora, index) => {
+            const consumo = Number(consumos[index] || 0);
+
+            if (consumo > umbral) {
+                encontradas++;
+
+                const item = document.createElement('div');
+                item.className = 'critical-item';
+                item.innerHTML = `
+                    <span><i class="fas fa-clock"></i> ${hora}</span>
+                    <strong>${consumo.toLocaleString('es-CO')} kWh</strong>
+                `;
+
+                contenedor.appendChild(item);
+            }
+        });
+
+        if (encontradas === 0) {
+            contenedor.innerHTML =
+                `<div class="empty-state">No se detectaron horas críticas por encima del umbral.</div>`;
+        }
+    }
+
+    function actualizarRecomendaciones(recomendaciones) {
+        const contenedor = document.getElementById('recomendaciones');
+        contenedor.innerHTML = '';
+
+        if (!recomendaciones.length) {
+            recomendaciones = ['No hay recomendaciones disponibles para este periodo.'];
+        }
+
+        recomendaciones.forEach(texto => {
+            const item = document.createElement('div');
+            item.className = 'recommendation-item';
+            item.innerHTML = `<i class="fas fa-check-circle"></i><span>${texto}</span>`;
+            contenedor.appendChild(item);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updateDate();
+        cargarReporte('semana');
+
+        document.getElementById('periodoSelector').addEventListener('change', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('refreshBtn').addEventListener('click', () => {
+            cargarReporte(document.getElementById('periodoSelector').value);
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', cerrarSesion);
+
+        setInterval(updateDate, 60000);
+    });
+</script>
+</body>
+</html>
